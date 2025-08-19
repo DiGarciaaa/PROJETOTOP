@@ -688,6 +688,11 @@
                 <button id="clearTelematicaBtn" class="clear-storage-btn"><i class="fas fa-eraser"></i> Limpar Telemática</button>
             </div>
 
+            <!-- NOVO BOTÃO PARA EXPORTAR DADOS PARA O SITE -->
+            <div class="action-buttons" style="margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 20px;">
+                <button id="exportForSiteBtn" style="background-color: #007bff; width: 100%;"><i class="fas fa-cloud-upload-alt"></i> Gerar Arquivo de Dados para o Site (Admin)</button>
+            </div>
+
             <div id="loading" class="loading-message" style="display:none;">
                 Carregando, processando e atualizando dados... Por favor, aguarde.
             </div>
@@ -753,7 +758,7 @@
                     <button id="baixadaForaToaBtn" style="background-color: var(--button-baixada-fora-toa-bg);">Baixada Fora TOA</button>
                     <button id="streamingBtn" style="background-color: var(--button-streaming-bg);">Streaming</button>
                     <button id="filterDx22Btn">Somente DX22</button>
-                    <button id="filterTelematicaBtn">Somente Telemática</</button>
+                    <button id="filterTelematicaBtn">Somente Telemática</button>
                     <button id="filterRecorrenteBtn">Somente Recorrentes</button>
                 </div>
             </div>
@@ -1313,6 +1318,7 @@
     const clearTelematicaBtn = document.getElementById('clearTelematicaBtn');
     const scoreRecorrente = document.getElementById('scoreRecorrente');
     const filterRecorrenteBtn = document.getElementById('filterRecorrenteBtn');
+    const exportForSiteBtn = document.getElementById('exportForSiteBtn'); // <<< NOVO
 
     const activeFiltersContainer = document.getElementById('activeFiltersContainer');
     const statusFilter = document.getElementById('statusFilter');
@@ -1398,7 +1404,7 @@
 
     const dddPorCidade = { "ADAMANTINA": "18", "AGUDOS": "14", "ALVARES MACHADO": "18", "AMERICANA": "19", "AMERICO BRASILIENSE": "16", "AMPARO": "19", "ANDRADINA": "18", "APARECIDA": "12", "ARACATUBA": "18", "ARARAQUARA": "16", "ARARAS": "19", "ARTUR NOGUEIRA": "19", "AVARE": "14", "BADY BASSITT": "17", "BARRETOS": "17", "BARRINHA": "16", "BATATAIS": "16", "BAURU": "14", "BEBEDOURO": "17", "BERTIOGA": "13", "BIRIGUI": "18", "BOITUVA": "15", "BOTUCATU": "14", "CACAPAVA": "12", "CACHOEIRA PAULISTA": "12", "CAMPINAS": "19", "CAMPOS DO JORDAO": "12", "CAPIVARI": "19", "CARAGUATATUBA": "12", "CASA BRANCA": "19", "CATANDUVA": "17", "CERQUILHO": "15", "CORDEIROPOLIS": "19", "COSMOPOLIS": "19", "CRAVINHOS": "16", "CRUZEIRO": "12", "CUBATAO": "13", "DESCALVADO": "19", "DRACENA": "18", "ELIAS FAUSTO": "19", "ESPIRITO SANTO DO PINHAL": "19", "FERNANDOPOLIS": "17", "FRANCA": "16", "GARCA": "14", "GUAIRA": "17", "GUAPIACU": "17", "GUARARAPES": "18", "GUARATINGUETA": "12", "GUARUJA": "13", "HORTOLANDIA": "19", "IBATE": "16", "IBIUNA": "15", "INDAIATUBA": "19", "IPERO": "15", "ITANHAEM": "13", "ITAPETININGA": "15", "ITAPEVA": "15", "ITAPIRA": "19", "ITUVERAVA": "16", "JABOTICABAL": "16", "JACAREI": "12", "JAGUARIUNA": "19", "JALES": "17", "JARDINOPOLIS": "16", "JAU": "14", "JOSE BONIFACIO": "17", "LARANJAL PAULISTA": "15", "LEME": "19", "LENCOIS PAULISTA": "14", "LIMEIRA": "19", "LINS": "14", "LORENA": "12", "LOUVEIRA": "19", "MARILIA": "14", "MATAO": "16", "MIRANDOPOLIS": "18", "MIRASSOL": "17", "MOCOCA": "19", "MOGI GUACU": "19", "MOGI MIRIM": "19", "MONGAGUA": "13", "MONTE ALTO": "16", "MONTE MOR": "19", "NOVA ODESSA": "19", "OLIMPIA": "17", "ORLANDIA": "16", "OURINHOS": "14", "PAULINIA": "19", "PEDREIRA": "19", "PENAPOLIS": "18", "PERUIBE": "13", "PIEDADE": "15", "PINDAMONHANGABA": "12", "PIRACICABA": "19", "PIRASSUNUNGA": "19", "PONTAL": "16", "PORTO FELIZ": "15", "PORTO FERREIRA": "19", "POTIM": "12", "POTIRENDABA": "17", "PRAIA GRANDE": "13", "PRESIDENTE BERNARDES": "18", "PRESIDENTE PRUDENTE": "18", "PROMISSAO": "14", "RAFARD": "19", "REGISTRO": "13", "RIBEIRAO PRETO": "16", "RIO CLARO": "19", "SANTA BARBARA D'OESTE": "19", "SANTA CRUZ DAS PALMEIRAS": "19", "SANTA CRUZ DO RIO PARDO": "14", "SANTA GERTRUDES": "19", "SANTA ROSA DE VITERBO": "16", "SANTOS": "13", "SANTOS ABC": "13", "SAO CARLOS": "16", "SAO JOAO DA BOA VISTA": "19", "SAO JOAQUIM DA BARRA": "16", "SAO JOSE DO RIO PARDO": "19", "SAO JOSE DO RIO PRETO": "17", "SAO JOSE DOS CAMPOS": "12", "SAO SEBASTIAO": "12", "SAO VICENTE": "13", "SAO PAULO": "11", "SERRA NEGRA": "19", "SERRANA": "16", "SERTAOZINHO": "16", "SOROCABA": "15", "SUMARE": "19", "TAMBAU": "19", "TATUI": "15", "TAUBATE": "12", "TIETE": "15", "TREMEMBE": "12", "UBATUBA": "12", "VALINHOS": "19", "VALPARAISO": "18", "VINHEDO": "19", "VOTORANTIM": "15", "VOTUPORANGA": "17" };
     const codigosCidadePorCidade = { "ADAMANTINA": "323", "AGUDOS": "411", "ALVARES MACHADO": "551", "AMERICANA": "386", "AMERICO BRASILIENSE": "624", "AMPARO": "538", "ANDRADINA": "697", "APARECIDA": "399", "ARACATUBA": "404", "ARARAQUARA": "409", "ARARAS": "413", "ARTUR NOGUEIRA": "419", "AVARE": "92", "BADY BASSITT": "124", "BARRETOS": "302", "BARRINHA": "16", "BATATAIS": "448", "BAURU": "8", "BEBEDOURO": "388", "BERTIOGA": "456", "BIRIGUI": "450", "BOITUVA": "464", "BOTUCATU": "471", "CACAPAVA": "487", "CACHOEIRA PAULISTA": "488", "CAMPINAS": "52", "CAMPOS DO JORDAO": "28", "CAPIVARI": "530", "CARAGUATATUBA": "553", "CASA BRANCA": "202", "CATANDUVA": "543", "CERQUILHO": "296", "CORDEIROPOLIS": "432", "COSMOPOLIS": "565", "CRAVINHOS": "569", "CRUZEIRO": "572", "CUBATAO": "573", "DESCALVADO": "576", "DRACENA": "586", "ELIAS FAUSTO": "595", "ESPIRITO SANTO DO PINHAL": "970", "FERNANDOPOLIS": "17", "FRANCA": "56", "GARCA": "232", "GUAIRA": "364", "GUAPIACU": "381", "GUARARAPES": "496", "GUARATINGUETA": "656", "GUARUJA": "659", "HORTOLANDIA": "668", "IBATE": "674", "IBIUNA": "755", "INDAIATUBA": "54", "IPERO": "15", "ITANHAEM": "712", "ITAPETININGA": "715", "ITAPEVA": "166", "ITAPIRA": "183", "ITUVERAVA": "574", "JABOTICABAL": "410", "JACAREI": "756", "JAGUARIUNA": "761", "JALES": "492", "JARDINOPOLIS": "575", "JAU": "769", "JOSE BONIFACIO": "662", "LARANJAL PAULISTA": "859", "LEME": "905", "LENCOIS PAULISTA": "913", "LIMEIRA": "791", "LINS": "948", "LORENA": "12", "LOUVEIRA": "798", "MARILIA": "820", "MATAO": "297", "MIRANDOPOLIS": "392", "MIRASSOL": "850", "MOCOCA": "431", "MOGI GUACU": "863", "MOGI MIRIM": "865", "MONGAGUA": "869", "MONTE ALTO": "534", "MONTE MOR": "882", "NOVA ODESSA": "910", "OLIMPIA": "987", "ORLANDIA": "592", "OURINHOS": "71", "PAULINIA": "954", "PEDREIRA": "966", "PENAPOLIS": "495", "PERUIBE": "972", "PIEDADE": "15", "PINDAMONHANGABA": "976", "PIRACICABA": "9", "PIRASSUNUNGA": "747", "PONTAL": "844", "PORTO FELIZ": "15", "PORTO FERREIRA": "908", "POTIM": "12", "POTIRENDABA": "17", "PRAIA GRANDE": "27", "PRESIDENTE BERNARDES": "25", "PRESIDENTE PRUDENTE": "36", "PROMISSAO": "74", "RAFARD": "19", "REGISTRO": "13", "RIBEIRAO PRETO": "16", "RIO CLARO": "19", "SANTA BARBARA D'OESTE": "103", "SANTA GERTRUDES": "793", "SANTA CRUZ DO RIO PARDO": "108", "SANTA CRUZ DAS PALMEIRAS": "743", "SANTA ROSA DE VITERBO": "16", "SANTOS": "13", "SANTOS ABC": "897", "SAO CARLOS": "53", "SAO JOAO DA BOA VISTA": "200", "SAO JOAQUIM DA BARRA": "615", "SAO JOSE DO RIO PARDO": "315", "SAO JOSE DO RIO PRETO": "6", "SAO JOSE DOS CAMPOS": "162", "SAO SEBASTIAO": "182", "SAO VICENTE": "187", "SAO PAULO": "11", "SERRA NEGRA": "579", "SERRANA": "587", "SERTAOZINHO": "195", "SOROCABA": "7", "SUMARE": "207", "TAMBAU": "19", "TATUI": "15", "TAUBATE": "12", "TIETE": "15", "TREMEMBE": "12", "UBATUBA": "12", "VALINHOS": "19", "VALPARAISO": "18", "VINHEDO": "19", "VOTORANTIM": "15", "VOTUPORANGA": "17" };
-    const epoPorCidade = { "AMERICANA": "ANTEC Americana", "HORTOLANDIA": "ANTEC Americana", "NOVA ODESSA": "ANTEC Americana", "SANTA BARBARA D'OESTE": "ANTEC Americana", "ARACATUBA": "CANTOIA DDD14/18", "BIRIGUI": "CANTOIA DDD14/18", "GUARARAPES": "CANTOIA DDD14/18", "MIRANDOPOLIS": "CANTOIA DDD14/18", "PENAPOLIS": "CANTOIA DDD14/18", "VALPARAISO": "CANTOIA DDD14/18", "AMERICO BRASILIENSE": "DANLEX DDD16/17", "ARARAQUARA": "DANLEX DDD16/17", "MATAO": "DANLEX DDD16/17", "MONTE ALTO": "DANLEX DDD16/17", "BERTIOGA": "DANLEX DDD13", "CUBATAO": "DANLEX DDD13", "GUARUJA": "DANLEX DDD13", "ITANHAEM": "DANLEX DDD13", "MONGAGUA": "DANLEX DDD13", "PERUIBE": "DANLEX DDD13", "PRAIA GRANDE": "DANLEX DDD13", "REGISTRO": "DANLEX DDD13", "SANTOS": "DANLEX DDD13", "SAO VICENTE": "DANLEX DDD13", "AGUDOS": "BASIC DDD14", "AVARE": "BASIC DDD14", "BAURU": "BASIC DDD14", "BOTUCATU": "BASIC DDD14", "GARCA": "GRANSAT", "JAU": "BASIC DDD14", "LENCOIS PAULISTA": "BASIC DDD14", "LINS": "BASIC DDD14", "MARILIA": "GRANSAT", "OURINHOS": "BASIC DDD14", "PROMISSAO": "CANTOIA DDD14/18", "SANTA CRUZ DO RIO PARDO": "BASIC DDD14", "CAMPINAS": "ANTEC Campinas", "INDAIATUBA": "DANLEX DDD19", "LOUVEIRA": "NEW TIME", "VALINHOS": "ANTEC Campinas", "VINHEDO": "ANTEC Campinas", "BATATAIS": "BASIC DDD16/17", "FRANCA": "DANLEX DDD16/17", "ITUVERAVA": "DANLEX DDD16/17", "ORLANDIA": "DANLEX DDD16/17", "SAO JOAQUIM DA BARRA": "DANLEX DDD16/17", "SUMARE": "ANTEC Americana", "ARARAS": "ANTEC Americana", "LIMEIRA": "ANTEC Americana", "CORDEIROPOLIS": "NEW TIME", "DESCALVADO": "NEW TIME", "LEME": "NEW TIME", "PIRASSUNUNGA": "NEW TIME", "PORTO FERREIRA": "NEW TIME", "RIO CLARO": "ANTEC Americana", "SANTA GERTRUDES": "NEW TIME", "SANTA ROSA DE VITERBO": "BASIC DDD16/17", "AMPARO": "NEW TIME", "CASA BRANCA": "NEW TIME", "ESPIRITO SANTO DO PINHAL": "NEW TIME", "ITAPIRA": "NEW TIME", "JAGUARIUNA": "NEW TIME", "MOGI GUACU": "ANTEC Campinas", "MOGI MIRIM": "ANTEC Campinas", "MOCOCA": "NEW TIME", "PEDREIRA": "NEW TIME", "SANTA CRUZ DAS PALMEIRAS": "NEW TIME", "SAO JOAO DA BOA VISTA": "NEW TIME", "SAO JOSE DO RIO PARDO": "NEW TIME", "SERRA NEGRA": "NEW TIME", "TAMBAU": "NEW TIME", "ARTUR NOGUEIRA": "ANTEC Campinas", "COSMOPOLIS": "ANTEC Campinas", "PAULINIA": "ANTEC Campinas", "CAPIVARI": "ANTEC Americana", "ELIAS FAUSTO": "ANTEC Americana", "MONTE MOR": "ANTEC Americana", "RAFARD": "ANTEC Americana", "PIRACICABA": "EAM", "ANDRADINA": "SCRIPT CALL", "DRACENA": "SCRIPT CALL", "PRESIDENTE PRUDENTE": "SCRIPT CALL", "ADAMANTINA": "SCRIPT CALL", "ALVARES MACHADO": "SCRIPT CALL", "PRESIDENTE BERNARDES": "SCRIPT CALL", "BARRINHA": "BASIC DDD16/17", "CRAVINHOS": "BASIC DDD16/17", "JARDINOPOLIS": "BASIC DDD16/17", "PONTAL": "BASIC DDD16/17", "JABOTICABAL": "DANLEX DDD16/17", "SERRANA": "BASIC DDD16/17", "RIBEIRAO PRETO": "BASIC DDD16/17", "SERTAOZINHO": "BASIC DDD16/17", "IBATE": "DANLEX DDD16/17", "SAO CARLOS": "DANLEX DDD16/17", "BADY BASSITT": "CANTOIA DDD17", "BEBEDOURO": "DANLEX DDD16/17", "CATANDUVA": "CANTOIA DDD17", "JOSE BONIFACIO": "CANTOIA DDD17", "FERNANDOPOLIS": "CANTOIA DDD17", "GUAPIACU": "CANTOIA DDD17", "JALES": "CANTOIA DDD17", "MIRASSOL": "CANTOIA DDD17", "BARRETOS": "BASIC DDD16/17", "POTIRENDABA": "CANTOIA DDD17", "GUAIRA": "BASIC DDD16/17", "SAO JOSE DO RIO PRETO": "CANTOIA DDD17", "OLIMPIA": "BASIC DDD16/17", "VOTUPORANGA": "CANTOIA DDD17", "JACAREI": "DANLEX DDD12", "SAO JOSE DOS CAMPOS": "DANLEX DDD12", "CARAGUATATUBA": "ARCAD", "SAO SEBASTIAO": "ARCAD", "UBATUBA": "ARCAD", "TATUI": "ACESSO", "IPERO": "ACESSO", "TIETE": "ANTEC Sorocaba", "IBIUNA": "ACESSO", "CERQUILHO": "ACESSO", "ITAPETININGA": "ANTEC Sorocaba", "ITAPEVA": "ACESSO", "LARANJAL PAULISTA": "ACESSO", "PIEDADE": "ACESSO", "PORTO FELIZ": "ANTEC Sorocaba", "SOROCABA": "ANTEC Sorocaba", "BOITUVA": "ACESSO", "VOTORANTIM": "ANTEC Sorocaba", "CACAPAVA": "DANLEX DDD12", "CAMPOS DO JORDAO": "ARCAD", "PINDAMONHANGABA": "DANLEX DDD12", "TREMEMBE": "DANLEX DDD12", "TAUBATE": "DANLEX DDD12", "APARECIDA": "ARCAD", "CACHOEIRA PAULISTA": "ARCAD", "CRUZEIRO": "ARCAD", "GUARATINGUETA": "ARCAD", "LORENA": "ARCAD", "POTIM": "ARCAD", "SAO PAULO": "DANLEX" };
+    const epoPorCidade = { "AMERICANA": "ANTEC Americana", "HORTOLANDIA": "ANTEC Americana", "NOVA ODESSA": "ANTEC Americana", "SANTA BARBARA D'OESTE": "ANTEC Americana", "ARACATUBA": "CANTOIA DDD14/18", "BIRIGUI": "CANTOIA DDD14/18", "GUARARAPES": "CANTOIA DDD14/18", "MIRANDOPOLIS": "CANTOIA DDD14/18", "PENAPOLIS": "CANTOIA DDD14/18", "VALPARAISO": "CANTOIA DDD14/18", "AMERICO BRASILIENSE": "DANLEX DDD16/17", "ARARAQUARA": "DANLEX DDD16/17", "MATAO": "DANLEX DDD16/17", "MONTE ALTO": "DANLEX DDD16/17", "BERTIOGA": "DANLEX DDD13", "CUBATAO": "DANLEX DDD13", "GUARUJA": "DANLEX DDD13", "ITANHAEM": "DANLEX DDD13", "MONGAGUA": "DANLEX DDD13", "PERUIBE": "DANLEX DDD13", "PRAIA GRANDE": "DANLEX DDD13", "REGISTRO": "DANLEX DDD13", "SANTOS": "DANLEX DDD13", "SAO VICENTE": "DANLEX DDD13", "AGUDOS": "BASIC DDD14", "AVARE": "BASIC DDD14", "BAURU": "BASIC DDD14", "BOTUCATU": "BASIC DDD14", "GARCA": "GRANSAT", "JAU": "BASIC DDD14", "LENCOIS PAULISTA": "BASIC DDD14", "LINS": "BASIC DDD14", "MARILIA": "GRANSAT", "OURINHOS": "BASIC DDD14", "PROMISSAO": "CANTOIA DDD14/18", "SANTA CRUZ DO RIO PARDO": "BASIC DDD14", "CAMPINAS": "ANTEC Campinas", "INDAIATUBA": "DANLEX DDD19", "LOUVEIRA": "NEW TIME", "VALINHOS": "ANTEC Campinas", "VINHEDO": "ANTEC Campinas", "BATATAIS": "BASIC DDD16/17", "FRANCA": "DANLEX DDD16/17", "ITUVERAVA": "DANLEX DDD16/17", "ORLANDIA": "DANLEX DDD16/17", "SAO JOAQUIM DA BARRA": "DANLEX DDD16/17", "SUMARE": "ANTEC Americana", "ARARAS": "ANTEC Americana", "LIMEIRA": "ANTEC Americana", "CORDEIROPOLIS": "NEW TIME", "DESCALVADO": "NEW TIME", "LEME": "NEW TIME", "PIRASSUNUNGA": "NEW TIME", "PORTO FERREIRA": "NEW TIME", "RIO CLARO": "ANTEC Americana", "SANTA GERTRUDES": "NEW TIME", "SANTA ROSA DE VITERBO": "BASIC DDD16/17", "AMPARO": "NEW TIME", "CASA BRANCA": "NEW TIME", "ESPIRITO SANTO DO PINHAL": "NEW TIME", "ITAPIRA": "NEW TIME", "JAGUARIUNA": "NEW TIME", "MOGI GUACU": "ANTEC Campinas", "MOGI MIRIM": "ANTEC Campinas", "MOCOCA": "NEW TIME", "PEDREIRA": "NEW TIME", "SANTA CRUZ DAS PALMEIRAS": "NEW TIME", "SAO JOAO DA BOA VISTA": "NEW TIME", "SAO JOSE DO RIO PARDO": "NEW TIME", "SERRA NEGRA": "NEW TIME", "TAMBAU": "NEW TIME", "ARTUR NOGUEIRA": "ANTEC Campinas", "COSMOPOLIS": "ANTEC Campinas", "PAULINIA": "ANTEC Campinas", "CAPIVARI": "ANTEC Americana", "ELIAS FAUSTO": "ANTEC Americana", "MONTE MOR": "ANTEC Americana", "RAFARD": "ANTEC Americana", "PIRACICABA": "EAM", "ANDRADINA": "SCRIPT CALL", "DRACENA": "SCRIPT CALL", "PRESIDENTE PRUDENTE": "SCRIPT CALL", "ADAMANTINA": "SCRIPT CALL", "ALVARES MACHADO": "SCRIPT CALL", "PRESIDENTE BERNARDES": "SCRIPT CALL", "BARRINHA": "BASIC DDD16/17", "CRAVINHOS": "BASIC DDD16/17", "JARDINOPOLIS": "BASIC DDD16/17", "PONTAL": "BASIC DDD16/17", "JABOTICABAL": "DANLEX DDD16/17", "SERRANA": "BASIC DDD16/17", "RIBEIRAO PRETO": "BASIC DDD16/17", "SERTAOZINHO": "BASIC DDD16/17", "IBATE": "DANLEX DDD16/17", "SAO CARLOS": "DANLEX DDD16/17", "BADY BASSITT": "CANTOIA DDD17", "BEBEDOURO": "DANLEX DDD16/17", "CATANDUVA": "CANTOIA DDD17", "JOSE BONIFACIO": "CANTOIA DDD17", "FERNANDOPOLIS": "CANTOIA DDD17", "GUAPIACU": "CANTOIA DDD17", "JALES": "CANTOIA DDD17", "MIRASSOL": "CANTOIA DDD17", "BARRETOS": "BASIC DDD16/17", "POTIRENDABA": "CANTOIA DDD17", "GUAIRA": "BASIC DDD16/17", "SAO JOSE DO RIO PRETO": "CANTOIA DDD17", "OLIMPIA": "BASIC DDD16/17", "VOTUPORANGA": "CANTOIA DDD17", "JACAREI": "DANLEX DDD12", "SAO JOSE DOS CAMPOS": "DANLEX DDD12", "CARAGUATATUBA": "ARCAD", "SAO SEBASTIAO": "ARCAD", "UBATUBA": "ARCAD", "TATUI": "ACESSO", "IPERO": "ACESSO", "TIETE": "ANTEC Sorocaba", "IBIUNA": "ACESSO", "CERQUILHO": "ACESSO", "ITAPETININGA": "ANTEC Sorocaba", "ITAPEVA": "ACESSO", "LARANJAL PAULISTA": "ACESSO", "PIEDADE": "ACESSO", "PORTO FELIZ": "ANTEC Sorocaba", "SOROCABA": "ANTEC Sorocaba", "BOITUVA": "ACESSO", "VOTORANTIM": "ANTEC Sorocaba", "CACAPAVA": "DANLEX DDD12", "CAMPOS DO JORDAO": "ARCAD", "PINDAMONHANGABA": "DANLEX DDD12", "TREMEMBE": "DANLEX DDD12", "TAUBATE": "DANLEX DDD12", "APARECIDA": "ARCAD", "CACHOEira PAULISTA": "ARCAD", "CRUZEIRO": "ARCAD", "GUARATINGUETA": "ARCAD", "LORENA": "ARCAD", "POTIM": "ARCAD", "SAO PAULO": "DANLEX" };
     const supervisorPorDDD = { '16': 'Diogenes', '17': 'Diogenes', '14': 'Samuel', '18': 'Samuel', '12': 'Jorge', '13': 'Jorge', '15': 'Misael', '19': 'Misael' };
     const dddsPorSupervisor = { 'Diogenes': ['16', '17'], 'Samuel': ['14', '18'], 'Jorge': ['12', '13'], 'Misael': ['15', '19'] };
     const columnMapping = { 'classificacaoStatus': 'Status', 'Recurso': 'Técnico', 'Login do Técnico': 'Login', 'Recorr.': 'Nº Recorr.', 'Datas Recorr.': 'Datas Recorr.', 'Endereço': 'Endereço', 'Cidade': 'Cidade', 'DDD': 'DDD', 'Cód. Cidade': 'Cód. Cidade', 'Intervalo de Tempo': 'Janela de Serviço', 'Contrato': 'Contrato', 'Categorias da Capacidade': 'Classe', 'Caso crítico (ouvidoria)': 'Caso Crítico', 'Cód de Baixa 1': 'Cód. Baixa', 'Motivo de Fechamento Externo': 'Motivo Fech. Ext.' };
@@ -1415,6 +1421,48 @@
     // =================================================================================
     // AQUI COMEÇAM AS FUNÇÕES PRINCIPAIS - A ORDEM É IMPORTANTE
     // =================================================================================
+
+    // <<< INÍCIO: NOVA FUNÇÃO PARA EXPORTAR DADOS PARA O SITE >>>
+    async function exportDataForSite() {
+        if (originalData.length === 0 && dx22Data.size === 0 && telematicaContracts.size === 0) {
+            alert("Não há dados carregados para exportar.");
+            return;
+        }
+
+        if (!confirm("Isso gerará um arquivo 'dados_consolidados.json' com todos os dados atuais. Você deverá enviar este arquivo para o repositório no GitHub para atualizar a visualização para todos. Deseja continuar?")) {
+            return;
+        }
+
+        document.getElementById('loading').style.display = 'block';
+
+        const dataToExport = {
+            lastUpdated: new Date().toISOString(),
+            rotas: originalData,
+            dx22: Array.from(dx22Data.entries()),
+            telematica: Array.from(telematicaContracts.entries()),
+            historicoRecorrencia: Array.from(historicoRecorrencia.entries()),
+            processedHistoryFileSignatures: Array.from(processedHistoryFileSignatures.values())
+        };
+
+        try {
+            const jsonString = JSON.stringify(dataToExport);
+            const blob = new Blob([jsonString], { type: 'application/json' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'dados_consolidados.json';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            alert("Arquivo 'dados_consolidados.json' gerado com sucesso!\n\nAgora, faça o commit e push deste arquivo para o seu repositório no GitHub para que as alterações fiquem visíveis para todos.");
+        } catch (error) {
+            console.error("Erro ao gerar JSON para o site:", error);
+            alert("Ocorreu um erro ao gerar o arquivo de dados.");
+        } finally {
+            document.getElementById('loading').style.display = 'none';
+        }
+    }
+    // <<< FIM: NOVA FUNÇÃO PARA EXPORTAR DADOS PARA O SITE >>>
+
 
     function updateDisplayedColumns() {
         displayedColumnKeys = [];
@@ -2683,14 +2731,55 @@
          updateActiveFilterCount();
 
          try {
-            const [
-                savedDarkMode, savedDx22Data, savedTelematicaData,
-                savedData, savedHistorySignatures, savedHistoryRecurrence, savedFileUploadTimestamps
-            ] = await Promise.all([
-                loadData('darkMode'), loadData('dx22'), loadData('telematica'),
-                loadData('rotas'), loadData('historyFileSignatures'), loadData('historicoRecorrencia'), loadData('fileUploadTimestamps')
-            ]);
+            // <<< INÍCIO DA MODIFICAÇÃO >>>
+            const response = await fetch('dados_consolidados.json?t=' + new Date().getTime()); // Adicionado cache-busting
+            if (response.ok) {
+                console.log("Arquivo 'dados_consolidados.json' encontrado. Carregando dados centrais.");
+                const siteData = await response.json();
+                
+                originalData = siteData.rotas || [];
+                dx22Data = new Map(siteData.dx22 || []);
+                telematicaContracts = new Map(siteData.telematica || []);
+                historicoRecorrencia = new Map(siteData.historicoRecorrencia || []);
+                processedHistoryFileSignatures = new Set(siteData.processedHistoryFileSignatures || []);
+                
+                document.getElementById('setupContainer').style.display = 'none';
 
+                const lastUpdatedDate = new Date(siteData.lastUpdated);
+                const dataInfoDiv = document.createElement('div');
+                dataInfoDiv.innerHTML = `<p style="text-align:center; color: var(--scorecard-label-color);">Dados atualizados em: ${lastUpdatedDate.toLocaleString('pt-BR')}</p>`;
+                document.getElementById('dataContainer').prepend(dataInfoDiv);
+
+
+            } else {
+                console.log("Arquivo JSON central não encontrado. Carregando dados locais do IndexedDB.");
+                const [
+                    savedData, savedDx22Data, savedTelematicaData,
+                    savedHistorySignatures, savedHistoryRecurrence, savedFileUploadTimestamps
+                ] = await Promise.all([
+                    loadData('rotas'), loadData('dx22'), loadData('telematica'),
+                    loadData('historyFileSignatures'), loadData('historicoRecorrencia'), loadData('fileUploadTimestamps')
+                ]);
+
+                originalData = savedData || [];
+                dx22Data = savedDx22Data || new Map();
+                telematicaContracts = savedTelematicaData || new Map();
+                processedHistoryFileSignatures = savedHistorySignatures || new Set();
+                historicoRecorrencia = savedHistoryRecurrence || new Map();
+                fileUploadTimestamps = savedFileUploadTimestamps || {};
+
+                for (const id in fileUploadTimestamps) {
+                    if (fileUploadTimestamps.hasOwnProperty(id)) {
+                        const timestampSpan = document.getElementById(`${id}Timestamp`);
+                        if (timestampSpan) {
+                            timestampSpan.textContent = `Última carga: ${fileUploadTimestamps[id]}`;
+                        }
+                    }
+                }
+            }
+            // <<< FIM DA MODIFICAÇÃO >>>
+
+            const savedDarkMode = await loadData('darkMode');
             if (savedDarkMode === true) {
                 document.body.classList.add('dark-mode');
                 darkModeToggle.querySelector('i').className = 'fas fa-sun';
@@ -2701,29 +2790,11 @@
                 darkModeToggle.lastChild.textContent = ' Dark Mode';
             }
 
-            dx22Data = savedDx22Data || new Map();
-            telematicaContracts = savedTelematicaData || new Map();
-            processedHistoryFileSignatures = savedHistorySignatures || new Set();
-            historicoRecorrencia = savedHistoryRecurrence || new Map();
-            fileUploadTimestamps = savedFileUploadTimestamps || {}; /* Load timestamps */
-
-            // Display loaded timestamps
-            for (const id in fileUploadTimestamps) {
-                if (fileUploadTimestamps.hasOwnProperty(id)) {
-                    const timestampSpan = document.getElementById(`${id}Timestamp`);
-                    if (timestampSpan) {
-                        timestampSpan.textContent = `Última carga: ${fileUploadTimestamps[id]}`;
-                    }
-                }
-            }
-
-
-            if (savedData && savedData.length > 0) {
-                originalData = savedData;
+            if (originalData && originalData.length > 0) {
                 originalData.forEach(row => { row.classificacaoStatus = classifyStatus(row); });
                 initializeAllFilters(originalData);
                 applyFilters();
-                 console.log(`${originalData.length} registros de rota e ${historicoRecorrencia.size} contratos no histórico carregados do banco de dados.`);
+                 console.log(`${originalData.length} registros de rota e ${historicoRecorrencia.size} contratos no histórico carregados.`);
             } else {
                 renderTable([]);
                 renderEpoAnalysis();
@@ -2732,7 +2803,7 @@
             }
 
         } catch(e) {
-            console.error("Falha ao carregar dados do IndexedDB:", e);
+            console.error("Falha ao carregar dados:", e);
             alert("Não foi possível carregar os dados salvos. O banco de dados pode estar corrompido.");
         }
 
@@ -2863,6 +2934,11 @@
     exportPendingSpecialsBtn.addEventListener('click', () => {
         exportPendingSpecialsToExcel();
     });
+
+    // <<< NOVO LISTENER PARA O BOTÃO DE EXPORTAR PARA O SITE >>>
+    if(exportForSiteBtn) {
+       exportForSiteBtn.addEventListener('click', exportDataForSite);
+    }
 
 
     document.getElementById('contextMenuChart').addEventListener('click', () => {
