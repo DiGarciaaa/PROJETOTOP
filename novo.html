@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comparador e Exportador de Excel</title>
+    
+    <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
+    <style>
+        body { font-family: sans-serif; margin: 20px; }
+        input[type="file"] { margin-bottom: 10px; }
+        button { padding: 10px 15px; background-color: #007bff; color: white; border: none; cursor: pointer; margin-top: 10px; margin-right: 10px; }
+        button:hover { background-color: #0056b3; }
+        button#exportButton:hover { background-color: #28a745; } /* Cor para o botão de exportar */
+        button#exportButton { background-color: #2e8b57; } /* Cor inicial do botão de exportar */
+
+        table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .success { color: green; font-weight: bold; }
+        .error { color: red; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>Comparar e Exportar Colunas de Arquivos Excel</h1>
+
+    <p>Selecione o **primeiro arquivo Excel** (com as colunas "Contrato" e "Endereço"):</p>
+    <input type="file" id="fileInput1" accept=".xlsx, .xls">
+
+    <p>Selecione o **segundo arquivo Excel** (com as colunas NET, NOME TITULAR, END COMPLETO, etc.):</p>
+    <input type="file" id="fileInput2" accept=".xlsx, .xls">
+
+    <p>Selecione o **terceiro arquivo Excel** (com a coluna "NR_CONTRATO" para visitas por telefone - **opcional**):</p>
+    <input type="file" id="fileInput3" accept=".xlsx, .xls">
+
+    <button id="compareButton">Comparar Arquivos</button>
+    <button id="exportButton" style="display: none;">Exportar Resultados para Excel</button>
+
+    <hr>
+
+    <h2>Resultados da Comparação:</h2>
+    <div id="resultsOutput">
+        <p>Selecione os arquivos e clique em "Comparar Arquivos" para ver os resultados.</p>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const fileInput1 = document.getElementById('fileInput1');
+            const fileInput2 = document.getElementById('fileInput2');
+            const fileInput3 = document.getElementById('fileInput3');
+            const compareButton = document.getElementById('compareButton');
+            const exportButton = document.getElementById('exportButton');
+            const resultsOutput = document.getElementById('resultsOutput');
+
+            let file1Data = null;
+            let file2Data = null;
+            let file3Data = null;
+            let currentMatchedRows = [];
+
+            // Constantes para os nomes das colunas
+            // Esta constante já está definida para "NOME TITULAR"
+            const columnClientNameFile2 = 'NOME TITULAR'; 
+            const columnAddressFile2ActualName = 'END COMPLETO'; // Nome original da coluna de endereço completo no segundo arquivo
+            const outputAddressFile2Name = 'End DX22'; // Nome desejado para a coluna de endereço completo na saída
+
+            // Define a ordem e os nomes exatos dos cabeçalhos de saída em um escopo mais amplo
+            const desiredHeaders = [
+                'Contrato', // Do Arquivo 1 (chave de comparação)
+                columnClientNameFile2, // NOME TITULAR (do Arquivo 2)
+                'CIDADE', // Do Arquivo 2
+                'MODELO EQPTO', // Do Arquivo 2
+                'MAC', // Do Arquivo 2
+                'TEL RES', // Do Arquivo 2
+                'TEL CEL', // Do Arquivo 2
+                'Endereço', // Endereço (do Arquivo 1)
+                outputAddressFile2Name, // End DX22 (END COMPLETO do Arquivo 2)
+                'COMPL1', // Do Arquivo 2
+                'COMPL1 DESCR', // Do Arquivo 2
+                'Status da Visita', // Status gerado pela comparação com Arquivo 3
+                'Cod de Baixa', // Do Arquivo 2
+                'Foto do local', // Do Arquivo 2 (se existir)
+                'Observação', // Do Arquivo 2
+                'ACAO', // Do Arquivo 2
+                'DDD', // Do Arquivo 2
+                'EPO', // Do Arquivo 2
+                'SUBTIPO EQPTO', // Do Arquivo 2
+                'TIPO DESCONEXAO', // Do Arquivo 2
+                'NET', // Do Arquivo 2
+                'QTD DE EQP NO CONTRATO', // Do Arquivo 2
+                'DIAS EM ABERTO', // Do Arquivo 2
+                'TIPO SOLIC', // Do Arquivo 2
+                'BAIRRO', // Do Arquivo 2
+                'TEL COM', // Do Arquivo 2
+                'Código de Baixa', // Do Arquivo 2
+                'Status Retirado' // Do Arquivo 2
+            ];
+
+            // Função para ler um arquivo Excel
+            function readExcelFile(file, callback) {
+                const reader = new FileReader();
+
+                reader.onload = function(e) {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        const sheetName = workbook.SheetNames[0];
+                        const worksheet = workbook.Sheets[sheetName];
+                        const json = XLSX.utils.sheet_to_json(worksheet);
+
+                        // --- ADIÇÃO PARA DEBUG: MOSTRAR CABEÇALHOS LIDOS ---
+                        if (json.length > 0) {
+                            console.log(`Cabeçalhos lidos do arquivo "${file.name}":`, Object.keys(json[0]));
+                        } else {
+                            console.log(`Arquivo "${file.name}" está vazio ou não pôde ler cabeçalhos.`);
+                        }
+                        // --- FIM DA ADIÇÃO PARA DEBUG ---
+
+                        callback(null, json);
+                    } catch (error) {
+                        callback(error, null);
+                    }
+                };
+
+                reader.onerror = function(ex) {
+                    callback(ex, null);
+                };
+
+                reader.readAsArrayBuffer(file);
+            }
+
+            fileInput1.addEventListener('change', (event) => {
+                const file = event.target.files[0];
+                if (file) {
+                    readExcelFile(file, (error, data) => {
+                        if (error) {
+                            file1Data = null;
+                            resultsOutput.innerHTML = '<p class="error">Erro ao ler o primeiro arquivo.</p>';
+                            console.error("Erro ao ler o primeiro arquivo:", error);
+                        } else {
+                            file1Data = data;
+                            resultsOutput.innerHTML = '<p class="success">Primeiro arquivo carregado com sucesso!</p>';
+                        }
+                        exportButton.style.display = 'none';
+                    });
+                } else {
+                    file1Data = null;
+                    resultsOutput.innerHTML = '<p>Nenhum arquivo selecionado para o primeiro input.</p>';
+                    exportButton.style.display = 'none';
+                }
+            });
+
+            fileInput2.addEventListener('change', (event) => {
+                const file = event.target.files[0];
+                if (file) {
+                    readExcelFile(file, (error, data) => {
+                        if (error) {
+                            file2Data = null;
+                            resultsOutput.innerHTML = '<p class="error">Erro ao ler o segundo arquivo.</p>';
+                            console.error("Erro ao ler o segundo arquivo:", error);
+                        } else {
+                            file2Data = data;
+                            resultsOutput.innerHTML = '<p class="success">Segundo arquivo carregado com sucesso!</p>';
+                        }
+                        exportButton.style.display = 'none';
+                    });
+                } else {
+                    file2Data = null;
+                    resultsOutput.innerHTML = '<p>Nenhum arquivo selecionado para o segundo input.</p>';
+                    exportButton.style.display = 'none';
+                }
+            });
+
+            fileInput3.addEventListener('change', (event) => {
+                const file = event.target.files[0];
+                if (file) {
+                    readExcelFile(file, (error, data) => {
+                        if (error) {
+                            file3Data = null;
+                            resultsOutput.innerHTML = '<p class="error">Erro ao ler o terceiro arquivo.</p>';
+                            console.error("Erro ao ler o terceiro arquivo:", error);
+                        } else {
+                            file3Data = data;
+                            resultsOutput.innerHTML = '<p class="success">Terceiro arquivo carregado com sucesso!</p>';
+                        }
+                        exportButton.style.display = 'none';
+                    });
+                } else {
+                    file3Data = null;
+                    resultsOutput.innerHTML = '<p>Nenhum arquivo selecionado para o terceiro input (opcional).</p>';
+                    exportButton.style.display = 'none';
+                }
+            });
+
+            // Lógica de comparação
+            compareButton.addEventListener('click', () => {
+                if (!file1Data || !file2Data) {
+                    resultsOutput.innerHTML = '<p class="error">Por favor, selecione o primeiro e o segundo arquivo Excel para comparar.</p>';
+                    exportButton.style.display = 'none';
+                    return;
+                }
+
+                resultsOutput.innerHTML = '<p>Comparando arquivos...</p>';
+                currentMatchedRows = [];
+                exportButton.style.display = 'none';
+
+                const columnNameFile1 = 'Contrato';
+                const columnAddressFile1 = 'Endereço';
+                const columnNameFile2 = 'NET'; // Chave de contrato no Arquivo 2
+                const columnNameFile3 = 'NR_CONTRATO'; // Chave de contrato no Arquivo 3
+                const outputPhoneColumnName = 'Status da Visita'; // Nome da coluna de status de visita na saída
+
+
+                // 1. Validar e preparar dados do segundo arquivo (para busca rápida)
+                if (file2Data.length === 0 || !Object.keys(file2Data[0]).includes(columnNameFile2)) {
+                     resultsOutput.innerHTML = `<p class="error">A coluna "${columnClientNameFile2}" não foi encontrada no segundo arquivo. Verifique o cabeçalho da sua planilha, *exatamente como está escrito*, e os cabeçalhos lidos no console (F12).</p>`;
+                     return;
+                }
+                if (!Object.keys(file2Data[0]).includes(columnAddressFile2ActualName)) {
+                    resultsOutput.innerHTML = `<p class="error">A coluna "${columnAddressFile2ActualName}" não foi encontrada no segundo arquivo. Certifique-se de que o cabeçalho está correto. (Esperado: "${columnAddressFile2ActualName}")</p>`;
+                    return;
+                }
+                if (!Object.keys(file2Data[0]).includes(columnNameFile2)) {
+                     resultsOutput.innerHTML = `<p class="error">A coluna "${columnNameFile2}" (NET) não foi encontrada no segundo arquivo ou o arquivo está vazio. Verifique o cabeçalho da sua planilha.</p>`;
+                     return;
+                }
+
+
+                const file2MapByContract = new Map();
+                file2Data.forEach(row => {
+                    if (row[columnNameFile2] !== undefined && row[columnNameFile2] !== null) {
+                        file2MapByContract.set(String(row[columnNameFile2]).trim(), row);
+                    }
+                });
+
+                // Preparar dados do terceiro arquivo (se carregado) para busca rápida
+                const contractsInFile3 = new Set();
+                if (file3Data) {
+                    if (file3Data.length === 0 || !Object.keys(file3Data[0]).includes(columnNameFile3)) {
+                        resultsOutput.innerHTML = `<p class="error">A coluna "${columnNameFile3}" não foi encontrada no terceiro arquivo ou o arquivo está vazio. A comparação continuará sem este filtro.</p>`;
+                        file3Data = null; // Desconsidera o arquivo 3 se a coluna chave não for encontrada
+                    } else {
+                        file3Data.forEach(row => {
+                            if (row[columnNameFile3] !== undefined && row[columnNameFile3] !== null) {
+                                contractsInFile3.add(String(row[columnNameFile3]).trim());
+                            }
+                        });
+                    }
+                }
+
+                // 2. Validar e iterar sobre o primeiro arquivo, aplicando o filtro de endereço
+                if (file1Data.length === 0 || !Object.keys(file1Data[0]).includes(columnNameFile1)) {
+                    resultsOutput.innerHTML = `<p class="error">A coluna "${columnNameFile1}" não foi encontrada no primeiro arquivo ou o arquivo está vazio. Verifique o cabeçalho da sua planilha.</p>`;
+                    return;
+                }
+                if (!Object.keys(file1Data[0]).includes(columnAddressFile1)) {
+                    resultsOutput.innerHTML = `<p class="error">A coluna de endereço "${columnAddressFile1}" não foi encontrada no primeiro arquivo. Verifique o cabeçalho da sua planilha.</p>`;
+                    return;
+                }
+
+                file1Data.forEach(row => {
+                    const contractFromF1 = (row[columnNameFile1] !== undefined && row[columnNameFile1] !== null) ? String(row[columnNameFile1]).trim() : '';
+                    const addressFromF1 = (row[columnAddressFile1] !== undefined && row[columnAddressFile1] !== null) ? String(row[columnAddressFile1]).trim() : '';
+
+                    if (contractFromF1 !== '' && addressFromF1 !== '') {
+                        if (file2MapByContract.has(contractFromF1)) {
+                            const matchedRowInFile2 = file2MapByContract.get(contractFromF1);
+                            
+                            const mergedRow = {};
+                            
+                            // Adiciona "Contrato" do PRIMEIRO arquivo (sempre a primeira coluna na saída)
+                            mergedRow[columnNameFile1] = contractFromF1;
+
+                            // Preenche as colunas na ordem desejada, buscando do arquivo 2 quando aplicável
+                            desiredHeaders.forEach(header => {
+                                // Ignoramos 'Contrato' e 'Endereço' do arquivo 1, que já foram tratados ou serão
+                                // E 'End DX22' que é um renomeamento de 'END COMPLETO'
+                                if (header === columnNameFile1 || header === columnAddressFile1 || header === outputAddressFile2Name) {
+                                    // Já tratado acima ou será tratado por outra condição
+                                } else if (Object.keys(matchedRowInFile2).includes(header)) {
+                                    mergedRow[header] = matchedRowInFile2[header];
+                                } else {
+                                    // Se a coluna não existir no arquivo 2, ou não for uma das especiais, preenche com vazio
+                                    if (mergedRow[header] === undefined) { // Evita sobrescrever valores já definidos
+                                        mergedRow[header] = '';
+                                    }
+                                }
+                            });
+
+                            // Adiciona "NOME TITULAR" do SEGUNDO arquivo
+                            if (Object.keys(matchedRowInFile2).includes(columnClientNameFile2)) {
+                                mergedRow[columnClientNameFile2] = matchedRowInFile2[columnClientNameFile2];
+                            } else {
+                                mergedRow[columnClientNameFile2] = '';
+                            }
+                            
+                            // Adiciona "Endereço" do PRIMEIRO arquivo (explicitamente)
+                            mergedRow[columnAddressFile1] = addressFromF1;
+
+                            // Adiciona "End DX22" (END COMPLETO) do SEGUNDO arquivo (explicitamente)
+                            if (Object.keys(matchedRowInFile2).includes(columnAddressFile2ActualName)) {
+                                mergedRow[outputAddressFile2Name] = matchedRowInFile2[columnAddressFile2ActualName];
+                            } else {
+                                mergedRow[outputAddressFile2Name] = '';
+                            }
+
+                            // Adiciona a coluna de status da visita baseada no terceiro arquivo
+                            if (file3Data && contractsInFile3.has(contractFromF1)) {
+                                mergedRow[outputPhoneColumnName] = 'Visita por Telefone';
+                            } else {
+                                mergedRow[outputPhoneColumnName] = '';
+                            }
+
+                            currentMatchedRows.push(mergedRow);
+                        }
+                    }
+                });
+
+                // Exibir os resultados e mostrar o botão de exportar se houver resultados
+                if (currentMatchedRows.length > 0) {
+                    let tableHtml = '<h3>Contratos encontrados (filtrados, com endereço do primeiro arquivo e status de visita):</h3>';
+                    tableHtml += '<table><thead><tr>';
+
+                    // Usa os cabeçalhos desejados para a tabela
+                    desiredHeaders.forEach(header => {
+                        tableHtml += `<th>${header}</th>`;
+                    });
+                    tableHtml += '</tr></thead><tbody>';
+
+                    currentMatchedRows.forEach(row => {
+                        tableHtml += '<tr>';
+                        // Preenche as células na ordem dos cabeçalhos desejados
+                        desiredHeaders.forEach(header => {
+                            tableHtml += `<td>${row[header] !== undefined ? row[header] : ''}</td>`;
+                        });
+                        tableHtml += '</tr>';
+                    });
+                    tableHtml += '</tbody></table>';
+                    resultsOutput.innerHTML = tableHtml;
+
+                    exportButton.style.display = 'inline-block';
+                } else {
+                    resultsOutput.innerHTML = '<p class="success">Nenhum contrato correspondente encontrado (ou todos foram filtrados por não terem endereço no primeiro arquivo).</p>';
+                    exportButton.style.display = 'none';
+                }
+            });
+
+            // Lógica de exportação
+            exportButton.addEventListener('click', () => {
+                if (currentMatchedRows.length === 0) {
+                    alert('Não há dados para exportar. Por favor, realize a comparação primeiro.');
+                    return;
+                }
+
+                // Cria uma nova lista de objetos com as colunas na ordem desejada para exportação
+                const exportableRows = currentMatchedRows.map(row => {
+                    const newRow = {};
+                    desiredHeaders.forEach(header => {
+                        newRow[header] = row[header] !== undefined ? row[header] : '';
+                    });
+                    return newRow;
+                });
+
+                const ws = XLSX.utils.json_to_sheet(exportableRows);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "Resultados da Comparação");
+
+                const now = new Date();
+                const dateStr = `${now.getFullYear()}${(now.getMonth() + 1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}`;
+                const timeStr = `${now.getHours().toString().padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}${now.getSeconds().toString().padStart(2, '0')}`;
+                const fileName = `Resultados_Comparacao_${dateStr}_${timeStr}.xlsx`;
+
+                XLSX.writeFile(wb, fileName);
+            });
+        });
+    </script>
+</body>
+</html>

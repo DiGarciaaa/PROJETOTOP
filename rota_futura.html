@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatório de Visitas x Capacidade (Excel) - Persistente</title>
+    <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #000000;
+            color: #ffffff;
+        }
+        .container {
+            background-color: #1a1a1a;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(220, 53, 69, 0.3);
+            max-width: 1000px;
+            margin: auto;
+            border: 1px solid #333333;
+        }
+        h1 {
+            color: #dc3545;
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        input[type="file"] {
+            display: block;
+            margin: 15px auto;
+            padding: 10px;
+            border: 1px solid #333333;
+            border-radius: 5px;
+            width: fit-content;
+            background-color: #2a2a2a;
+            color: #ffffff;
+        }
+        button {
+            display: block;
+            margin: 15px auto;
+            padding: 10px 20px;
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #c82333;
+        }
+        #output {
+            margin-top: 25px;
+            padding: 15px;
+            background-color: #2a2a2a;
+            border-radius: 8px;
+            max-height: 700px;
+            overflow-y: auto;
+            border: 1px solid #333333;
+        }
+        #output h2 {
+            color: #dc3545;
+            text-align: center;
+            margin-top: 20px;
+            margin-bottom: 15px;
+        }
+        #output h2:first-of-type {
+            margin-top: 0;
+        }
+        .table-section {
+            margin-bottom: 30px;
+            padding: 15px;
+            border-radius: 8px;
+        }
+        .table-section.above {
+            background-color: #3d1a1a;
+            border: 1px solid #dc3545;
+        }
+        .table-section.below {
+            background-color: #1a3d1a;
+            border: 1px solid #28a745;
+        }
+
+        .table-section h3 {
+            text-align: center;
+            color: #dc3545;
+            margin-top: 0;
+            margin-bottom: 15px;
+        }
+        .table-section.below h3 {
+            color: #28a745;
+        }
+
+        .resultsTable {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: #1a1a1a;
+        }
+        .resultsTable th, .resultsTable td {
+            border: 1px solid #333333;
+            padding: 8px;
+            text-align: left;
+            font-size: 0.9em;
+            color: #ffffff;
+        }
+        .table-section.above .resultsTable th {
+            background-color: #dc3545;
+            color: white;
+            font-weight: bold;
+        }
+        .table-section.below .resultsTable th {
+            background-color: #28a745;
+            color: white;
+            font-weight: bold;
+        }
+
+        .resultsTable tbody tr:nth-child(even) {
+            background-color: #222222;
+        }
+        .error {
+            color: #dc3545;
+            text-align: center;
+            margin-top: 10px;
+        }
+        .instructions {
+            background-color: #2a2a2a;
+            border-left: 5px solid #dc3545;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            color: #ffffff;
+        }
+        .instructions p {
+            margin: 5px 0;
+        }
+        #exportButton {
+            display: none;
+            margin-top: 25px;
+            padding: 12px 25px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+        }
+        #exportButton:hover {
+            background-color: #218838;
+        }
+        .capacity-input {
+            width: 60px;
+            padding: 3px;
+            border: 1px solid #333333;
+            border-radius: 3px;
+            background-color: #2a2a2a;
+            color: #ffffff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Relatório de Visitas por Cidade e Capacidade</h1>
+        <div class="instructions">
+            <p><strong>Instruções:</strong></p>
+            <p>1. Selecione suas **planilhas de rota futura** (até 12 arquivos) nos formatos **.xlsx, .xls, .csv ou .txt**.</p>
+            <p>2. Este script lerá a **coluna C (Identificador da atividade)** para extrair a UN (espera-se que esteja APÓS A PRIMEIRA VÍRGULA, ex: "Desc, PIR-AREA02" -> pega "PIR-AREA02").</p>
+            <p>3. A **coluna R (Categorias da capacidade)** será usada para filtrar e contar visitas das classes "8", "9", "10", "12" e "14".</p>
+            <p>4. Clique em "Processar Arquivos" para ver o relatório. O resultado será dividido em duas tabelas: "Acima da Capacidade" e "Abaixo/Na Capacidade".</p>
+            <p>5. **Você pode editar a "Capacidade Máxima" diretamente nas tabelas.** As alterações serão salvas automaticamente e persistem ao recarregar a página.</p>
+            <p>6. Um botão para **Exportar para Excel** será exibido, gerando um arquivo com duas abas formatadas.</p>
+        </div>
+        <input type="file" id="fileInput" multiple accept=".xlsx, .xls, .csv, .txt">
+        <button onclick="processFiles()">Processar Arquivos</button>
+        <div id="output">
+            <p id="loadingMessage" style="display: none; text-align: center;">Carregando e processando arquivos...</p>
+            
+            <div id="aboveCapacitySection" class="table-section above" style="display: none;">
+                <h3>Cidades Acima da Capacidade</h3>
+                <table class="resultsTable">
+                    <thead>
+                        <tr>
+                            <th>Cidade</th>
+                            <th>Capacidade Máxima</th>
+                            <th>Total Visitas</th>
+                            <th>Diferença (Visitas)</th>
+                            <th>Classe 8</th>
+                            <th>Classe 9</th>
+                            <th>Classe 10</th>
+                            <th>Classe 12</th>
+                            <th>Classe 14</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resultsTableAboveBody">
+                        </tbody>
+                </table>
+            </div>
+
+            <div id="belowCapacitySection" class="table-section below" style="display: none;">
+                <h3>Cidades Abaixo/Na Capacidade</h3>
+                <table class="resultsTable">
+                    <thead>
+                        <tr>
+                            <th>Cidade</th>
+                            <th>Capacidade Máxima</th>
+                            <th>Total Visitas</th>
+                            <th>Diferença (Visitas)</th>
+                            <th>Classe 8</th>
+                            <th>Classe 9</th>
+                            <th>Classe 10</th>
+                            <th>Classe 12</th>
+                            <th>Classe 14</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resultsTableBelowBody">
+                        </tbody>
+                </table>
+            </div>
+            
+            <button id="exportButton" onclick="exportToExcel()">Exportar para Excel</button>
+        </div>
+        <p class="error" id="errorMessage"></p>
+    </div>
+
+    <script>
+        // Mapeamento UN -> Cidade
+        const unCityMap = new Map([
+            ["SRR-AREA02", "SAO JOSE DO RIO PRETO"], ["SRR-AREA01", "SAO JOSE DO RIO PRETO"],
+            ["AQU-AREA01", "ARARAQUARA"], ["AQU-AREA02", "ARARAQUARA"],
+            ["SCA-AREA01", "SAO CARLOS"], ["FRA-AREA01", "FRANCA"],
+            ["STZ-AREA01", "SERTAOZINHO"],
+            ["RIB-AREA01", "RIBEIRAO PRETO"], ["RIB-AREA02", "RIBEIRAO PRETO"],
+            ["RIB-AREA03", "RIBEIRAO PRETO"], ["RIB-AREA04", "RIBEIRAO PRETO"],
+            ["LIM-AREA02", "LIMEIRA"], ["LIM-AREA01", "LIMEIRA"],
+            ["AAS-AREA01", "ARARAS"], ["RCL-AREA01", "RIO CLARO"],
+            ["LME-AREA01", "LEME"], ["MOG-AREA01", "MOGI GUACU"],
+            ["MMI-AREA01", "MOGI MIRIM"], ["MOC-AREA01", "MOCOCA"],
+            ["SZS-AREA01", "SANTA CRUZ DAS PALMEIRAS"],
+            ["JAC-AREA01", "JACAREI"],
+            ["SJC-AREA02", "SAO JOSE DOS CAMPOS"], ["SJC-AREA03", "SAO JOSE DOS CAMPOS"],
+            ["SJC-AREA05", "SAO JOSE DOS CAMPOS"], ["SJC-AREA04", "SAO JOSE DOS CAMPOS"],
+            ["SJC-AREA01", "SAO JOSE DOS CAMPOS"],
+            ["CGT-AREA01", "CARAGUATATUBA"], ["CGT-AREA02", "CARAGUATATUBA"],
+            ["SST-AREA01", "SAO SEBASTIAO"],
+            ["UTB-AREA02", "UBATUBA"], ["UTB-AREA01", "UBATUBA"],
+            ["TAU-AREA02", "TAUBATE"], ["TAU-AREA01", "TAUBATE"],
+            ["CAP-AREA01", "CACAPAVA"], ["CPJ-AREA01", "CAMPOS DO JORDAO"],
+            ["PIN-AREA01", "PINDAMONHANGABA"], ["TMB-AREA01", "TREMEMBE"],
+            ["GTA-AREA02", "GUARATINGUETA"], ["CRO-AREA02", "CRUZEIRO"],
+            ["GTA-AREA01", "GUARATINGUETA"], ["ADA-AREA01", "APARECIDA"],
+            ["LNA-AREA01", "LORENA"], ["CHP-AREA01", "CACHOEIRA PAULISTA"],
+            ["BRU-AREA01", "BAURU"], ["BRU-AREA02", "BAURU"],
+            ["BOT-AREA01", "BOTUCATU"], ["JAU-AREA01", "JAU"],
+            ["MLI-AREA02", "MARILIA"], ["MLI-AREA01", "MARILIA"],
+            ["IGA-AREA01", "ITAPETININGA"], ["CQO-AREA01", "CERQUILHO"],
+            ["BTV-AREA01", "BOITUVA"], ["TTI-AREA01", "TATUI"],
+            ["SOR-AREA01", "SOROCABA"], ["SOR-AREA02", "SOROCABA"],
+            ["SOR-AREA930", "SOROCABA"], ["SOR-AREA03", "SOROCABA"],
+            ["SOR-AREA04", "SOROCABA"],
+            ["VOM-AREA01", "VOTORANTIM"], ["PRF-AREA01", "PORTO FELIZ"],
+            ["TIE-AREA01", "TIETE"],
+            ["CAS-AREA04", "CAMPINAS"], ["CAS-AREA01", "CAMPINAS"],
+            ["RFD-AREA01", "RAFARD"], ["CPR-AREA01", "CAPIVARI"],
+            ["PLA-AREA01", "PAULINIA"], ["CAS-AREA07", "CAMPINAS"],
+            ["CAS-AREA05", "CAMPINAS"], ["CAS-AREA03", "CAMPINAS"],
+            ["CAS-AREA941", "CAMPINAS"], ["CAS-AREA06", "CAMPINAS"],
+            ["SUM-AREA01", "SUMARE"], ["HOR-AREA02", "HORTOLANDIA"],
+            ["HOR-AREA01", "HORTOLANDIA"], ["CAS-AREA02", "CAMPINAS"],
+            ["IND-AREA01", "INDAIATUBA"], ["VAL-AREA01", "VALINHOS"],
+            ["CMP-AREA01", "COSMOPOLIS"], ["AGA-AREA01", "ARTUR NOGUEIRA"],
+            ["BER-AREA03", "BERTIOGA"], ["BER-AREA02", "BERTIOGA"],
+            ["BER-AREA01", "BERTIOGA"],
+            ["CUB-AREA1", "CUBATAO"], ["SVI-AREA1", "SAO VICENTE"],
+            ["GUA-AREA01", "GUARUJA"], ["INE-AREA1", "ITANHAEM"],
+            ["MGG-AREA1", "MONGAGUA"], ["PUE-AREA1", "PERUIBE"],
+            ["PGR-AREA01", "PRAIA GRANDE"], ["RGT-AREA01", "REGISTRO"],
+            ["STS-AREA4", "SANTOS"], ["STS-AREA03", "SANTOS"],
+            ["STS-AREA2", "SANTOS"], ["STS-AREA1", "SANTOS"],
+            ["ACT-AREA01", "ARACATUBA"],
+            ["AME-AREA01", "AMERICANA"], ["STB-AREA01", "SANTA BARBARA D OESTE"],
+            ["NDS-AREA01", "NOVA ODESSA"],
+            ["PIR-AREA02", "PIRACICABA"], ["PIR-AREA01", "PIRACICABA"]
+        ]);
+
+        // Mapeamento Cidade -> Capacidade (Valores padrão)
+        const defaultCityCapacityMap = new Map([
+            ["AMERICANA", 50], ["HORTOLANDIA", 25], ["NOVA ODESSA", 10],
+            ["SANTA BARBARA D OESTE", 25], ["ARACATUBA", 20], ["BIRIGUI", 5],
+            ["GUARARAPES", 5], ["MIRANDOPOLIS", 5], ["PENAPOLIS", 5],
+            ["VALPARAISO", 5], ["AMERICO BRASILIENSE", 10], ["ARARAQUARA", 60],
+            ["MATAO", 5], ["MONTE ALTO", 5], ["BERTIOGA", 20],
+            ["CUBATAO", 25], ["GUARUJA", 50], ["ITANHAEM", 25],
+            ["MONGAGUA", 15], ["PERUIBE", 15], ["PRAIA GRANDE", 100],
+            ["REGISTRO", 4], ["SANTOS", 120], ["SAO VICENTE", 50],
+            ["AGUDOS", 5], ["AVARE", 5], ["BAURU", 75],
+            ["BOTUCATU", 25], ["GARCA", 5], ["JAU", 25],
+            ["LENCOIS PAULISTA", 5], ["LINS", 5], ["MARILIA", 75],
+            ["OURINHOS", 25], ["PROMISSAO", 5], ["SANTA CRUZ DO RIO PARDO", 25],
+            ["CAMPINAS", 175], ["INDAIATUBA", 60], ["LOUVEIRA", 5],
+            ["VALINHOS", 12], ["VINHEDO", 12], ["BATATAIS", 10],
+            ["FRANCA", 70], ["ITUVERAVA", 5], ["ORLANDIA", 5],
+            ["SAO JOAQUIM DA BARRA", 5], ["SUMARE", 25], ["ARARAS", 25],
+            ["LIMEIRA", 25], ["CORDEIROPOLIS", 10], ["DESCALVADO", 10],
+            ["LEME", 10], ["PIRASSUNUNGA", 10], ["PORTO FERREIRA", 10],
+            ["RIO CLARO", 25], ["SANTA GERTRUDES", 10], ["AMPARO", 10],
+            ["CASA BRANCA", 10], ["ESPIRITO SANTO DO PINHAL", 10], ["ITAPIRA", 10],
+            ["JAGUARIUNA", 15], ["MOGI GUACU", 15], ["MOGI MIRIM", 10],
+            ["MOCOCA", 10], ["PEDREIRA", 10], ["SANTA CRUZ DAS PALMEIRAS", 25],
+            ["SAO JOAO DA BOA VISTA", 10], ["SAO JOSE DO RIO PARDO", 10],
+            ["SERRA NEGRA", 10], ["TAMBAU", 7], ["ARTUR NOGUEIRA", 7],
+            ["COSMOPOLIS", 20], ["PAULINIA", 10], ["CAPIVARI", 25],
+            ["ELIAS FAUSTO", 10], ["MONTE MOR", 10], ["RAFARD", 75],
+            ["PIRACICABA", 5], ["ANDRADINA", 5], ["DRACENA", 25],
+            ["PRESIDENTE PRUDENTE", 5], ["ADAMANTINA", 5], ["ALVARES MACHADO", 5],
+            ["PRESIDENTE BERNARDES", 10], ["BARRINHA", 7], ["CRAVINHOS", 6],
+            ["JARDINOPOLIS", 10], ["PONTAL", 5], ["JABOTICABAL", 10],
+            ["SANTA ROSA DE VITERBO", 7], ["SERRANA", 65], ["RIBEIRAO PRETO", 20],
+            ["SERTAOZINHO", 10], ["IBATE", 85], ["SAO CARLOS", 5],
+            ["BADY BASSITT", 5], ["BEBEDOURO", 5], ["CATANDUVA", 5],
+            ["JOSE BONIFACIO", 20], ["FERNANDOPOLIS", 5], ["GUAPIACU", 20],
+            ["JALES", 60], ["MIRASSOL", 20], ["BARRETOS", 5],
+            ["POTIRENDABA", 25], ["GUAIRA", 160], ["SAO JOSE DO RIO PRETO", 50],
+            ["OLIMPIA", 20], ["VOTUPORANGA", 20], ["JACAREI", 25],
+            ["SAO JOSE DOS CAMPOS", 10], ["CARAGUATATUBA", 25], ["SAO SEBASTIAO", 25],
+            ["UBATUBA", 5], ["TATUI", 10], ["IPERO", 10],
+            ["TIETE", 25], ["IBIUNA", 200], ["CERQUILHO", 10],
+            ["ITAPETININGA", 25], ["ITAPEVA", 25], ["LARANJAL PAULISTA", 5],
+            ["PIEDADE", 25], ["PORTO FELIZ", 25], ["SOROCABA", 60],
+            ["BOITUVA", 10], ["VOTORANTIM", 10], ["CACAPAVA", 10],
+            ["CAMPOS DO JORDAO", 30], ["PINDAMONHANGABA", 20], ["TREMEMBE", 10],
+            ["TAUBATE", 10], ["APARECIDA", 30]
+        ]);
+
+        let cityCapacityMap = new Map(); // Esta será a versão carregada/editável
+        const desiredClasses = ["CLASSE8", "CLASSE9", "CLASSE10", "CLASSE12", "CLASSE14"];
+        const allowedCategories = new Set(desiredClasses);
+
+        // Armazena os dados processados para que não se percam ao recalcular/redesenhar
+        let processedCityData = null; 
+
+        // --- Funções de Persistência (localStorage) ---
+        function loadCapacities() {
+            try {
+                const storedCapacities = localStorage.getItem('cityCapacities');
+                if (storedCapacities) {
+                    // Rehidrata o mapa do JSON salvo
+                    cityCapacityMap = new Map(JSON.parse(storedCapacities));
+                    console.log('Capacidades carregadas do localStorage.');
+                } else {
+                    // Se não houver nada salvo, usa os valores padrão
+                    cityCapacityMap = new Map(defaultCityCapacityMap);
+                    console.log('Nenhuma capacidade salva encontrada, usando valores padrão.');
+                }
+            } catch (e) {
+                console.error('Erro ao carregar capacidades do localStorage:', e);
+                // Em caso de erro, volta para os valores padrão para evitar falha
+                cityCapacityMap = new Map(defaultCityCapacityMap);
+            }
+        }
+
+        function saveCapacities() {
+            try {
+                // Converte o mapa para um array JSON para salvar
+                localStorage.setItem('cityCapacities', JSON.stringify(Array.from(cityCapacityMap.entries())));
+                console.log('Capacidades salvas no localStorage.');
+            } catch (e) {
+                console.error('Erro ao salvar capacidades no localStorage:', e);
+            }
+        }
+
+        // --- Funções Principais ---
+
+        async function processFiles() {
+            const resultsTableAboveBody = document.getElementById('resultsTableAboveBody');
+            const resultsTableBelowBody = document.getElementById('resultsTableBelowBody');
+            const aboveCapacitySection = document.getElementById('aboveCapacitySection');
+            const belowCapacitySection = document.getElementById('belowCapacitySection');
+            const errorMessage = document.getElementById('errorMessage');
+            const loadingMessage = document.getElementById('loadingMessage');
+            const exportButton = document.getElementById('exportButton');
+
+            // Limpa as tabelas e esconde as seções e o botão
+            resultsTableAboveBody.innerHTML = '';
+            resultsTableBelowBody.innerHTML = '';
+            aboveCapacitySection.style.display = 'none';
+            belowCapacitySection.style.display = 'none';
+            errorMessage.textContent = '';
+            loadingMessage.style.display = 'block';
+            exportButton.style.display = 'none';
+
+            const fileInput = document.getElementById('fileInput');
+            const files = fileInput.files;
+
+            const currentCityClassCounts = new Map(); 
+            
+            if (files.length === 0) {
+                errorMessage.textContent = 'Por favor, selecione pelo menos um arquivo.';
+                loadingMessage.style.display = 'none';
+                return;
+            }
+
+            if (files.length > 12) {
+                errorMessage.textContent = 'Você pode carregar no máximo 12 arquivos de uma vez.';
+                loadingMessage.style.display = 'none';
+                return;
+            }
+
+            let filesProcessedCount = 0; 
+
+            for (const file of files) {
+                try {
+                    const reader = new FileReader();
+                    reader.onload = async function(e) {
+                        const data = new Uint8Array(e.target.result);
+                        let workbook;
+
+                        try {
+                            workbook = XLSX.read(data, { type: 'array' });
+                        } catch (excelError) {
+                            const textDecoder = new TextDecoder('utf-8');
+                            const text = textDecoder.decode(data);
+                            const delimiter = detectDelimiter(text);
+                            workbook = XLSX.read(text, { type: 'string', raw: true, FS: delimiter });
+                        }
+
+                        workbook.SheetNames.forEach(sheetName => {
+                            const worksheet = workbook.Sheets[sheetName];
+                            const jsonSheet = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+                            const identificadorAtividadeCol = 2; // Coluna C (índice 2)
+                            const categoriasCapacidadeCol = 17; // Coluna R (índice 17)
+
+                            jsonSheet.forEach(row => {
+                                if (row.length > identificadorAtividadeCol && row.length > categoriasCapacidadeCol) {
+                                    const rawIdentificador = String(row[identificadorAtividadeCol] || '').trim();
+                                    const categoriaCompleta = String(row[categoriasCapacidadeCol] || '').trim().toUpperCase();
+
+                                    let specificClass = ''; 
+                                    
+                                    for (const allowedCat of allowedCategories) {
+                                        if (categoriaCompleta.includes(allowedCat)) {
+                                            specificClass = allowedCat; 
+                                            break; 
+                                        }
+                                    }
+
+                                    if (specificClass) { 
+                                        let unFromCell = '';
+                                        const parts = rawIdentificador.split(',');
+                                        if (parts.length > 1) {
+                                            unFromCell = parts[1].trim().toUpperCase();
+                                        } else {
+                                            unFromCell = rawIdentificador.toUpperCase();
+                                        }
+                                        
+                                        const cidade = unCityMap.get(unFromCell);
+
+                                        if (cidade) {
+                                            if (!currentCityClassCounts.has(cidade)) {
+                                                currentCityClassCounts.set(cidade, new Map());
+                                            }
+                                            const classCountsForCity = currentCityClassCounts.get(cidade);
+                                            
+                                            classCountsForCity.set(specificClass, (classCountsForCity.get(specificClass) || 0) + 1);
+                                        }
+                                    }
+                                }
+                            });
+                        });
+
+                        filesProcessedCount++;
+                        if (filesProcessedCount === files.length) {
+                            loadingMessage.style.display = 'none';
+
+                            if (currentCityClassCounts.size === 0 && errorMessage.textContent === '') {
+                                errorMessage.textContent = 'Nenhuma visita encontrada com os filtros especificados. Verifique as colunas, as categorias e o mapeamento UN-Cidade.';
+                            } else {
+                                processedCityData = currentCityClassCounts; // Salva os dados processados
+                                displayResults(processedCityData); // Exibe os resultados
+                                exportButton.style.display = 'block'; // Mostra o botão de exportar
+                            }
+                        }
+                    };
+
+                    reader.onerror = function(ex) {
+                        errorMessage.textContent += `Erro ao carregar o arquivo ${file.name}: ${ex}. `;
+                        console.error(`Erro ao carregar o arquivo ${file.name}:`, ex);
+                        filesProcessedCount++;
+                        if (filesProcessedCount === files.length) {
+                            loadingMessage.style.display = 'none';
+                        }
+                    };
+
+                    reader.readAsArrayBuffer(file);
+
+                } catch (error) {
+                    errorMessage.textContent += `Erro geral ao processar o arquivo ${file.name}: ${error.message}. `;
+                    console.error(`Erro geral ao processar o arquivo ${file.name}:`, error);
+                    filesProcessedCount++;
+                    if (filesProcessedCount === files.length) {
+                        loadingMessage.style.display = 'none';
+                    }
+                }
+            }
+        }
+
+        // Função para atualizar a capacidade manualmente
+        function updateCapacity(cityName, newCapacity) {
+            newCapacity = parseInt(newCapacity); // Garante que é um número
+            if (isNaN(newCapacity) || newCapacity < 0) {
+                alert('Por favor, insira um número válido para a capacidade.');
+                return;
+            }
+            cityCapacityMap.set(cityName, newCapacity);
+            saveCapacities(); // Salva a capacidade atualizada
+            if (processedCityData) { // Se já houver dados processados, redesenha
+                displayResults(processedCityData);
+            }
+        }
+
+        function displayResults(cityClassCounts) {
+            const resultsTableAboveBody = document.getElementById('resultsTableAboveBody');
+            const resultsTableBelowBody = document.getElementById('resultsTableBelowBody');
+            const aboveCapacitySection = document.getElementById('aboveCapacitySection');
+            const belowCapacitySection = document.getElementById('belowCapacitySection');
+
+            resultsTableAboveBody.innerHTML = ''; 
+            resultsTableBelowBody.innerHTML = ''; 
+
+            const citiesAboveCapacity = [];
+            const citiesBelowCapacity = [];
+
+            const sortedCities = Array.from(cityClassCounts.keys()).sort();
+            
+            sortedCities.forEach(city => {
+                const classCountsForCity = cityClassCounts.get(city);
+                let totalVisits = 0;
+                desiredClasses.forEach(cls => { 
+                    totalVisits += (classCountsForCity.get(cls) || 0);
+                });
+
+                // Usa a capacidade do mapa editável
+                const capacity = cityCapacityMap.get(city) || 0; 
+                const difference = totalVisits - capacity;
+
+                const rowData = {
+                    city: city,
+                    capacity: capacity,
+                    totalVisits: totalVisits,
+                    difference: difference,
+                    classes: {}
+                };
+                desiredClasses.forEach(cls => { 
+                    rowData.classes[cls] = classCountsForCity.get(cls) || 0;
+                });
+
+                if (difference > 0) { 
+                    citiesAboveCapacity.push(rowData);
+                } else { 
+                    citiesBelowCapacity.push(rowData);
+                }
+            });
+
+            // Preenche a tabela "Acima da Capacidade"
+            if (citiesAboveCapacity.length > 0) {
+                aboveCapacitySection.style.display = 'block';
+                citiesAboveCapacity.forEach(data => {
+                    const row = resultsTableAboveBody.insertRow();
+                    row.insertCell().textContent = data.city;
+                    
+                    // Coluna de Capacidade como Input
+                    const capacityCell = row.insertCell();
+                    const capacityInput = document.createElement('input');
+                    capacityInput.type = 'number';
+                    capacityInput.value = data.capacity;
+                    capacityInput.min = "0";
+                    capacityInput.className = 'capacity-input';
+                    capacityInput.setAttribute('data-city', data.city); // Atributo para identificar a cidade
+                    capacityInput.onchange = (event) => updateCapacity(data.city, event.target.value);
+                    capacityCell.appendChild(capacityInput);
+
+                    row.insertCell().textContent = data.totalVisits;
+                    row.insertCell().textContent = `${data.difference}`; 
+                    desiredClasses.forEach(cls => {
+                        row.insertCell().textContent = data.classes[cls];
+                    });
+                });
+            } else {
+                aboveCapacitySection.style.display = 'none';
+            }
+
+            // Preenche a tabela "Abaixo/Na Capacidade"
+            if (citiesBelowCapacity.length > 0) {
+                belowCapacitySection.style.display = 'block';
+                citiesBelowCapacity.forEach(data => {
+                    const row = resultsTableBelowBody.insertRow();
+                    row.insertCell().textContent = data.city;
+                    
+                    // Coluna de Capacidade como Input
+                    const capacityCell = row.insertCell();
+                    const capacityInput = document.createElement('input');
+                    capacityInput.type = 'number';
+                    capacityInput.value = data.capacity;
+                    capacityInput.min = "0";
+                    capacityInput.className = 'capacity-input';
+                    capacityInput.setAttribute('data-city', data.city);
+                    capacityInput.onchange = (event) => updateCapacity(data.city, event.target.value);
+                    capacityCell.appendChild(capacityInput);
+
+                    row.insertCell().textContent = data.totalVisits;
+                    row.insertCell().textContent = `${data.difference}`; 
+                    desiredClasses.forEach(cls => {
+                        row.insertCell().textContent = data.classes[cls];
+                    });
+                });
+            } else {
+                belowCapacitySection.style.display = 'none';
+            }
+        }
+
+
+        // Função para exportar para Excel
+        function exportToExcel() {
+            const wb = XLSX.utils.book_new(); 
+
+            const header = ["Cidade", "Capacidade Máxima", "Total Visitas", "Diferença (Visitas)", "Classe 8", "Classe 9", "Classe 10", "Classe 12", "Classe 14"];
+
+            // Define o estilo de borda para todas as células
+            const borderStyle = {
+                top: { style: "thin", color: { rgb: "FFCCCCCC" } },
+                bottom: { style: "thin", color: { rgb: "FFCCCCCC" } },
+                left: { style: "thin", color: { rgb: "FFCCCCCC" } },
+                right: { style: "thin", color: { rgb: "FFCCCCCC" } }
+            };
+
+            // --- Planilha "Acima Capacidade" ---
+            const dataAbove = [header];
+            const tableAboveBody = document.getElementById('resultsTableAboveBody');
+            Array.from(tableAboveBody.rows).forEach(row => {
+                const rowData = [];
+                rowData.push(row.cells[0].textContent); // Cidade
+                rowData.push(row.cells[1].querySelector('.capacity-input').value); // Capacidade do input
+                rowData.push(row.cells[2].textContent); // Total Visitas
+                rowData.push(row.cells[3].textContent); // Diferença
+                for(let i = 4; i < row.cells.length; i++) { // Classes
+                    rowData.push(row.cells[i].textContent);
+                }
+                dataAbove.push(rowData);
+            });
+            const wsAbove = XLSX.utils.aoa_to_sheet(dataAbove);
+
+            if (dataAbove.length > 0) { 
+                for (let i = 0; i < dataAbove.length; i++) { 
+                    for (let j = 0; j < header.length; j++) {
+                        const cellAddress = XLSX.utils.encode_cell({c:j, r:i});
+                        
+                        // Garante que a célula e seu objeto de estilo existem
+                        if (!wsAbove[cellAddress]) wsAbove[cellAddress] = { t: 's' }; // Tipo string por padrão
+                        if (!wsAbove[cellAddress].s) wsAbove[cellAddress].s = {}; 
+
+                        // Aplica bordas a todas as células
+                        wsAbove[cellAddress].s.border = borderStyle;
+
+                        // Estilo para o cabeçalho (primeira linha)
+                        if (i === 0) {
+                            wsAbove[cellAddress].s.fill = { fgColor: { rgb: "FFD9534F" } }; // Vermelho para cabeçalho
+                            wsAbove[cellAddress].s.font = { color: { rgb: "FFFFFFFF" }, bold: true }; // Texto branco e negrito
+                        } else {
+                            // Cores de fundo alternadas para as linhas de dados (após o cabeçalho)
+                            if ((i - 1) % 2 === 0) { // Linhas de dados pares (0, 2, 4...)
+                                wsAbove[cellAddress].s.fill = { fgColor: { rgb: "FFFFE0E0" } }; 
+                            } else { // Linhas de dados ímpares (1, 3, 5...)
+                                wsAbove[cellAddress].s.fill = { fgColor: { rgb: "FFFFCCCC" } }; 
+                            }
+                        }
+                    }
+
+                    // Estilo específico para a coluna "Diferença"
+                    if (i > 0) { // Apenas para as linhas de dados
+                        const diffCellAddress = XLSX.utils.encode_cell({c:3, r:i}); 
+                        // Garante que a célula e seu objeto de estilo existem para a diferença
+                        if (!wsAbove[diffCellAddress]) wsAbove[diffCellAddress] = { t: 's' };
+                        if (!wsAbove[diffCellAddress].s) wsAbove[diffCellAddress].s = {}; 
+
+                        const diffValue = parseInt(dataAbove[i][3]); // Pega o valor da diferença
+
+                        if (diffValue > 0) {
+                            wsAbove[diffCellAddress].s.font = { color: { rgb: "FF008000" } }; // Verde para positivo
+                            wsAbove[diffCellAddress].s.numFmt = "+#"; // Formato para mostrar o sinal de +
+                        } else if (diffValue < 0) {
+                            wsAbove[diffCellAddress].s.font = { color: { rgb: "FFFF0000" } }; // Vermelho para negativo
+                            wsAbove[diffCellAddress].s.numFmt = "-#"; // Formato para mostrar o sinal de -
+                        } else {
+                            wsAbove[diffCellAddress].s.numFmt = "0"; // Apenas o número para 0
+                        }
+                    }
+                }
+            }
+            XLSX.utils.book_append_sheet(wb, wsAbove, "Acima Capacidade");
+
+
+            // --- Planilha "Abaixo Capacidade" ---
+            const dataBelow = [header];
+            const tableBelowBody = document.getElementById('resultsTableBelowBody');
+            Array.from(tableBelowBody.rows).forEach(row => {
+                const rowData = [];
+                rowData.push(row.cells[0].textContent); // Cidade
+                rowData.push(row.cells[1].querySelector('.capacity-input').value); // Capacidade do input
+                rowData.push(row.cells[2].textContent); // Total Visitas
+                rowData.push(row.cells[3].textContent); // Diferença
+                for(let i = 4; i < row.cells.length; i++) { // Classes
+                    rowData.push(row.cells[i].textContent);
+                }
+                dataBelow.push(rowData);
+            });
+            const wsBelow = XLSX.utils.aoa_to_sheet(dataBelow);
+
+            if (dataBelow.length > 0) { 
+                for (let i = 0; i < dataBelow.length; i++) { 
+                    for (let j = 0; j < header.length; j++) {
+                        const cellAddress = XLSX.utils.encode_cell({c:j, r:i});
+                        
+                        // Garante que a célula e seu objeto de estilo existem
+                        if (!wsBelow[cellAddress]) wsBelow[cellAddress] = { t: 's' };
+                        if (!wsBelow[cellAddress].s) wsBelow[cellAddress].s = {}; 
+
+                        // Aplica bordas a todas as células
+                        wsBelow[cellAddress].s.border = borderStyle;
+
+                        // Estilo para o cabeçalho (primeira linha)
+                        if (i === 0) {
+                            wsBelow[cellAddress].s.fill = { fgColor: { rgb: "FF28A745" } }; // Verde para cabeçalho
+                            wsBelow[cellAddress].s.font = { color: { rgb: "FFFFFFFF" }, bold: true }; // Texto branco e negrito
+                        } else {
+                            // Cores de fundo alternadas para as linhas de dados (após o cabeçalho)
+                            if ((i - 1) % 2 === 0) { // Linhas de dados pares
+                                wsBelow[cellAddress].s.fill = { fgColor: { rgb: "FFE0FFE0" } }; 
+                            } else { // Linhas de dados ímpares
+                                wsBelow[cellAddress].s.fill = { fgColor: { rgb: "FFCCFFCC" } }; 
+                            }
+                        }
+                    }
+
+                    // Estilo específico para a coluna "Diferença"
+                    if (i > 0) { // Apenas para as linhas de dados
+                        const diffCellAddress = XLSX.utils.encode_cell({c:3, r:i}); 
+                        // Garante que a célula e seu objeto de estilo existem para a diferença
+                        if (!wsBelow[diffCellAddress]) wsBelow[diffCellAddress] = { t: 's' };
+                        if (!wsBelow[diffCellAddress].s) wsBelow[diffCellAddress].s = {}; 
+                        
+                        const diffValue = parseInt(dataBelow[i][3]);
+
+                        if (diffValue > 0) {
+                            wsBelow[diffCellAddress].s.font = { color: { rgb: "FF008000" } }; 
+                            wsBelow[diffCellAddress].s.numFmt = "+#"; 
+                        } else if (diffValue < 0) {
+                            wsBelow[diffCellAddress].s.font = { color: { rgb: "FFFF0000" } }; 
+                            wsBelow[diffCellAddress].s.numFmt = "-#"; 
+                        } else {
+                            wsBelow[diffCellAddress].s.numFmt = "0"; 
+                        }
+                    }
+                }
+            }
+            XLSX.utils.book_append_sheet(wb, wsBelow, "Abaixo Capacidade");
+
+            // Define a largura das colunas
+            const wscols = [
+                {wch: 20}, // Cidade
+                {wch: 18}, // Capacidade Máxima
+                {wch: 15}, // Total Visitas
+                {wch: 18}, // Diferença (Visitas)
+                {wch: 12}, // Classe 8
+                {wch: 12}, // Classe 9
+                {wch: 12}, // Classe 10
+                {wch: 12}, // Classe 12
+                {wch: 12}  // Classe 14
+            ];
+            wsAbove['!cols'] = wscols;
+            wsBelow['!cols'] = wscols;
+
+
+            XLSX.writeFile(wb, "Relatorio_Visitas_Capacidade.xlsx");
+        }
+
+
+        // Função auxiliar para detectar o delimitador em CSV/TXT
+        function detectDelimiter(text) {
+            if (text.includes(';')) return ';';
+            if (text.includes(',')) return ',';
+            if (text.includes('\t')) return '\t';
+            return ',';
+        }
+
+        // --- Inicialização ao Carregar a Página ---
+        document.addEventListener('DOMContentLoaded', () => {
+            loadCapacities(); // Carrega as capacidades salvas
+            // Adiciona um listener para o evento beforeunload para salvar os dados antes de fechar a página (opcional, mas boa prática)
+            window.addEventListener('beforeunload', saveCapacities);
+        });
+    </script>
+</body>
+</html>

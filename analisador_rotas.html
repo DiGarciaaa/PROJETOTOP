@@ -1,0 +1,2879 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <link rel="icon" href="/favicon.ico" type="image/x-icon">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analisador de Rotas de Visitas Técnicas</title>
+    <!-- XLSX é mantido para leitura rápida de arquivos -->
+    <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
+    <!-- ExcelJS é usado para a nova exportação com estilos -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        :root {
+            /* Tema Claro (Padrão) */
+            --bg-color: #f4f7f6;
+            --container-bg-color: #ffffff;
+            --text-color: #333333;
+            --header-color: #FF073A; /* Neon Red */
+            --border-color: #dee2e6;
+            --table-header-bg: #e9ecef;
+            --table-row-even-bg: #f8f9fa;
+            --scorecard-bg: #f8f9fa;
+            --scorecard-item-bg: #ffffff;
+            --scorecard-label-color: #6c757d;
+            --button-primary-bg: #FF2600; /* Electric Red */
+            --button-primary-hover-bg: #E60000; /* Darker Red */
+            --button-active-bg: #28a745; /* Keep green for active/success */
+            --button-active-hover-bg: #218838; /* Darker green */
+            --button-danger-bg: #FF2600; /* Electric Red */
+            --button-danger-hover-bg: #E60000; /* Darker Red */
+            --button-info-bg-dx22: #FF0077; /* Fuchsia */
+            --button-info-hover-bg-dx22: #CC0066; /* Darker Fuchsia */
+            --button-info-active-bg-dx22: #990044; /* Even Darker Fuchsia */
+            --button-warning-bg-telematica: #FF9900; /* Orange */
+            --button-warning-hover-bg-telematica: #E68A00; /* Darker Orange */
+            --button-warning-active-bg-telematica: #CC7A00; /* Even Darker Orange */
+            --button-streaming-bg: #8A2BE2; /* BlueViolet for streaming */
+            --button-streaming-hover-bg: #7A28CC; /* Darker BlueViolet */
+            --button-agenda-clear-bg: #6c757d;
+            --button-agenda-clear-hover-bg: #5a6268;
+            --button-baixada-fora-toa-bg: #fd7e14;
+            --button-baixada-fora-toa-hover-bg: #e66b0a;
+            --button-recorrente-bg: #007bff;
+            --button-recorrente-hover-bg: #0069d9;
+            --button-recorrente-active-bg: #0056b3;
+            --table-recorrente-match-bg: #e6f2ff;
+            --table-recorrente-match-border: #007bff;
+            --scorecard-recorrente-color: #007bff;
+            --table-baixada-fora-toa-bg: #fff3e6;
+            --table-baixada-fora-toa-text: #d96d00;
+            --table-dx22-match-bg: #eaf6eb;
+            --table-dx22-match-border: #28a745;
+            --table-telematica-match-bg: #fdeeee;
+            --table-telematica-match-border: #FF0000; /* Neon Red for Telematica border */
+            --table-streaming-match-bg: #f0eaf7;
+            --table-streaming-match-border: #8A2BE2; /* BlueViolet for Streaming border */
+            --filter-count-color: #00bcd4;
+            --filter-tag-bg: #e9ecef;
+        }
+
+        /* Tema Escuro */
+        body.dark-mode {
+            --bg-color: #000000;
+            --container-bg-color: #1a1a1a;
+            --text-color: #ffffff;
+            --header-color: #dc3545;
+            --border-color: #333333;
+            --table-header-bg: #2a2a2a;
+            --table-row-even-bg: #222222;
+            --scorecard-bg: #1a1a1a;
+            --scorecard-item-bg: #2a2a2a;
+            --scorecard-label-color: #cccccc;
+            --table-recorrente-match-bg: #002a4d;
+            --table-baixada-fora-toa-bg: #4d2a00;
+            --table-baixada-fora-toa-text: #ffa500;
+            --table-dx22-match-bg: #1a3d1a;
+            --table-telematica-match-bg: #1a1a3d;
+            --table-streaming-match-bg: #2a1a3d;
+            --filter-tag-bg: #333333;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: background-color 0.3s, color 0.3s;
+        }
+        h1, h2, h3, h4 {
+            color: var(--header-color);
+        }
+        .container {
+            background-color: var(--container-bg-color);
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            border: 1px solid var(--border-color);
+        }
+        body.dark-mode .container {
+             box-shadow: 0 2px 10px rgba(220, 53, 69, 0.3);
+        }
+        .file-upload-section {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .custom-file-upload {
+            border: 1px solid var(--border-color);
+            display: inline-block;
+            padding: 8px 12px; /* Smaller padding */
+            cursor: pointer;
+            background-color: var(--button-primary-bg);
+            color: white;
+            border-radius: 5px;
+            transition: background-color 0.3s ease;
+            font-size: 14px; /* Smaller font */
+            line-height: 1;
+        }
+        .custom-file-upload:hover {
+            background-color: var(--button-primary-hover-bg);
+        }
+        input[type="file"] {
+            display: none;
+        }
+
+        .filters {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .filter-group {
+            position: relative;
+        }
+        .filter-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .filter-group input, .filter-group select {
+            width: 100%;
+            padding: 6px; /* Smaller padding */
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            box-sizing: border-box;
+            background-color: var(--container-bg-color);
+            color: var(--text-color);
+            font-size: 0.9em; /* Slightly smaller font */
+        }
+        .filter-buttons {
+            grid-column: 1 / -1;
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            justify-content: flex-start;
+            flex-wrap: wrap;
+        }
+        .filter-buttons button {
+            padding: 8px 12px; /* Smaller padding */
+            border: none;
+            border-radius: 5px;
+            background-color: var(--button-primary-bg);
+            color: white;
+            cursor: pointer;
+            font-size: 14px; /* Smaller font */
+            transition: background-color 0.3s ease;
+            white-space: nowrap;
+        }
+        .filter-buttons button:hover {
+            background-color: var(--button-primary-hover-bg);
+        }
+        .filter-buttons button.active {
+            background-color: var(--button-active-bg);
+        }
+        #filterDx22Btn {
+            background-color: var(--button-info-bg-dx22);
+        }
+        #filterDx22Btn:hover {
+            background-color: var(--button-info-hover-bg-dx22);
+        }
+        #filterDx22Btn.active {
+            background-color: var(--button-info-active-bg-dx22);
+        }
+        #filterTelematicaBtn {
+            background-color: var(--button-warning-bg-telematica);
+        }
+        #filterTelematicaBtn:hover {
+            background-color: var(--button-warning-hover-bg-telematica);
+        }
+        #filterTelematicaBtn.active {
+            background-color: var(--button-warning-active-bg-telematica);
+        }
+        #filterRecorrenteBtn {
+            background-color: var(--button-recorrente-bg);
+        }
+        #filterRecorrenteBtn:hover {
+            background-color: var(--button-recorrente-hover-bg);
+        }
+        #filterRecorrenteBtn.active {
+            background-color: var(--button-recorrente-active-bg);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background-color: var(--container-bg-color);
+            table-layout: fixed;
+        }
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 6px;
+            text-align: left;
+            word-wrap: break-word;
+            overflow: hidden;
+            font-size: 0.8em;
+        }
+        th {
+            background-color: var(--table-header-bg);
+            font-weight: bold;
+            text-align: center;
+            vertical-align: middle;
+        }
+        tr:nth-child(even) {
+            background-color: var(--table-row-even-bg);
+        }
+        .no-data {
+            text-align: center;
+            padding: 20px;
+            color: var(--scorecard-label-color);
+        }
+        .loading-message {
+            text-align: center;
+            padding: 15px;
+            color: var(--header-color);
+            font-weight: bold;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            justify-content: flex-start;
+            flex-wrap: wrap;
+        }
+        .action-buttons button {
+            padding: 8px 12px; /* Smaller padding */
+            border: none;
+            border-radius: 5px;
+            color: white;
+            cursor: pointer;
+            font-size: 14px; /* Smaller font */
+            transition: background-color 0.3s ease;
+        }
+        .clear-storage-btn {
+            background-color: var(--button-danger-bg);
+        }
+        .clear-storage-btn:hover {
+            background-color: var(--button-danger-hover-bg);
+        }
+        .export-btn {
+            background-color: var(--button-active-bg);
+            color: white;
+            padding: 5px 12px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: background-color 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin-left: auto; /* Alinha o botão à direita */
+        }
+        .export-btn:hover {
+            background-color: var(--button-active-hover-bg);
+        }
+        .baixada-fora-toa {
+            background-color: var(--table-baixada-fora-toa-bg) !important;
+            color: var(--table-baixada-fora-toa-text) !important;
+        }
+        .dx22-match {
+            background-color: var(--table-dx22-match-bg) !important;
+            border-left: 5px solid var(--table-dx22-match-border);
+        }
+        .telematica-match {
+            background-color: var(--table-telematica-match-bg) !important;
+            border-left: 5px solid var(--table-telematica-match-border);
+        }
+        .streaming-match {
+            background-color: var(--table-streaming-match-bg) !important;
+            border-left: 5px solid var(--table-streaming-match-border);
+        }
+        .recorrente-match {
+            background-color: var(--table-recorrente-match-bg) !important;
+            border-left: 5px solid var(--table-recorrente-match-border);
+        }
+
+        .scorecard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+            margin-bottom: 20px;
+            padding: 20px;
+            background-color: var(--scorecard-bg);
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        .scorecard-item {
+            text-align: center;
+            flex: 1;
+            min-width: 120px;
+            padding: 10px;
+            background-color: var(--scorecard-item-bg);
+            border-radius: 6px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            transition: transform 0.2s ease, background-color 0.3s;
+        }
+        .scorecard-item:hover {
+            transform: translateY(-3px);
+        }
+        .scorecard-label {
+            font-size: 0.9em;
+            color: var(--scorecard-label-color);
+            margin-bottom: 5px;
+        }
+        .scorecard-value {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: var(--header-color); /* Neon Red for total score in light mode */
+        }
+        .scorecard-value.concluidas {
+            color: #28a745;
+        }
+        .scorecard-value.pendentes {
+            color: #ffc107;
+        }
+        .scorecard-value.total {
+            color: var(--header-color); /* Use header color for total */
+        }
+        .scorecard-value.streaming {
+            color: #6f42c1;
+        }
+        .scorecard-value.dx22-contracts {
+            color: #00bcd4;
+        }
+        .scorecard-value.telematica-contracts {
+            color: #03a9f4;
+        }
+        .scorecard-value.recorrente {
+            color: var(--scorecard-recorrente-color);
+        }
+        .scorecard-value.baixadas-fora-toa {
+            color: var(--button-baixada-fora-toa-bg);
+        }
+        
+        .city-technicians-info {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background-color: var(--button-streaming-bg);
+            color: white;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.75em;
+            font-weight: bold;
+            transform: translateY(-50%);
+            z-index: 10;
+            white-space: nowrap;
+            display: none;
+        }
+
+        .top-right-buttons {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+            z-index: 1000;
+        }
+        .top-right-buttons button {
+            background-color: #6c757d;
+            color: white;
+            border: none;
+            padding: 8px 12px; /* Smaller padding */
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px; /* Smaller font */
+            transition: background-color 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .top-right-buttons button:hover {
+            background-color: #5a6268;
+        }
+        
+        .table-legend-wrapper {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .table-legend {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            font-size: 0.9em;
+            color: var(--scorecard-label-color);
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-weight: bold;
+            color: white;
+        }
+
+        #activeFilterCount {
+            font-size: 0.9em;
+            font-weight: bold;
+            color: var(--filter-count-color);
+        }
+
+        #activeFiltersContainer {
+            grid-column: 1 / -1;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 15px;
+            min-height: 20px;
+        }
+        .active-filter-tag {
+            display: flex;
+            align-items: center;
+            background-color: var(--filter-tag-bg);
+            color: var(--text-color);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            border: 1px solid var(--border-color);
+        }
+        .remove-filter-btn {
+            background: none;
+            border: none;
+            color: var(--header-color); /* Neon Red for remove filter button */
+            margin-left: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1.2em;
+            padding: 0 4px;
+        }
+        .remove-filter-btn:hover {
+            color: white;
+            background-color: var(--header-color);
+            border-radius: 50%;
+        }
+
+        .dx22-color {
+            background-color: var(--table-dx22-match-border);
+        }
+        .telematica-color {
+            background-color: var(--table-telematica-match-border);
+        }
+        .baixa-toa-color {
+            background-color: var(--button-baixada-fora-toa-bg);
+        }
+        .recorrente-color {
+            background-color: var(--table-recorrente-match-border);
+        }
+        
+        .chart-modal {
+            display: none; 
+            position: fixed; 
+            z-index: 2000; 
+            left: 0;
+            top: 0;
+            width: 100%; 
+            height: 100%; 
+            overflow: auto; 
+            background-color: rgba(0,0,0,0.6);
+            backdrop-filter: blur(5px);
+        }
+        .chart-modal-content {
+            background-color: var(--container-bg-color);
+            margin: 10% auto; 
+            padding: 20px;
+            border: 1px solid var(--border-color);
+            width: 80%; 
+            max-width: 600px;
+            border-radius: 8px;
+            position: relative;
+        }
+        .chart-modal-close {
+            color: var(--scorecard-label-color);
+            position: absolute;
+            top: 10px;
+            right: 25px;
+            font-size: 35px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .chart-modal-close:hover,
+        .chart-modal-close:focus {
+            color: var(--header-color);
+        }
+        
+        #contextMenu {
+            display: none;
+            position: absolute;
+            z-index: 3000;
+            background-color: var(--container-bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            box-shadow: 0px 2px 10px rgba(0,0,0,0.2);
+            padding: 5px 0;
+            list-style: none;
+            margin: 0;
+        }
+        #contextMenu li {
+            padding: 8px 15px;
+            cursor: pointer;
+            font-size: 0.9em;
+        }
+        #contextMenu li:hover {
+            background-color: var(--table-header-bg);
+        }
+        
+        .epo-name, .city-name { cursor: pointer; font-weight: bold; }
+        .epo-name:hover, .city-name:hover { color: var(--header-color); }
+        .city-detail-row td {
+            background-color: var(--table-row-even-bg);
+        }
+        
+        .pendentes-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .pendentes-list { list-style: none; padding: 0; margin-left: 15px; }
+        .pendentes-list li { 
+            background: var(--table-row-even-bg); 
+            border: 1px solid var(--border-color); 
+            padding: 5px; 
+            margin-bottom: 5px;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+
+        .section-header-wrapper {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 10px;
+        }
+        
+        /* New styles for loading indicator and timestamp */
+        .file-upload-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+
+        .loading-indicator {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(0, 0, 0, 0.2);
+            border-top: 2px solid var(--header-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            vertical-align: middle;
+            display: none; /* Hidden by default */
+        }
+
+        .file-timestamp {
+            font-size: 0.8em;
+            color: var(--scorecard-label-color);
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+
+        @media (max-width: 1200px) {
+            th, td {
+                padding: 5px;
+                font-size: 0.75em;
+            }
+        }
+        @media (max-width: 900px) {
+            th, td {
+                padding: 3px;
+                font-size: 0.7em;
+            }
+            .filters {
+                grid-template-columns: 1fr;
+            }
+            .filter-buttons {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .filter-buttons button, .file-upload-section .custom-file-upload {
+                width: 100%;
+                box-sizing: border-box;
+            }
+            .pendentes-container { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="top-right-buttons">
+        <button id="darkModeToggle"><i class="fas fa-moon"></i> Dark Mode</button>
+        <button id="homeButton"><i class="fas fa-home"></i> Início</button>
+        <button id="epoAnalysisBtn"><i class="fas fa-chart-bar"></i> Análise por EPO</button>
+        <button id="telXToaBtn"><i class="fas fa-exchange-alt"></i> TEL x TOA</button>
+        <button id="pendingSpecialsBtn"><i class="fas fa-exclamation-triangle"></i> TEL e BOX Pendentes</button>
+    </div>
+
+    <div id="mainContentContainer">
+        <div class="container" id="setupContainer">
+            <h1>Analisador de Rotas de Visitas Técnicas</h1>
+            <p>Suba as planilhas na ordem indicada para realizar as análises.</p>
+            
+            <div class="file-upload-section">
+                <div class="file-upload-item">
+                    <label for="excelFiles" class="custom-file-upload">
+                        <i class="fas fa-file-upload"></i> ROTA EXTRAIDA TOA...
+                    </label>
+                    <input type="file" id="excelFiles" accept=".xlsx, .xls" multiple>
+                    <span class="loading-indicator" id="excelFilesLoading"></span>
+                    <span class="file-timestamp" id="excelFilesTimestamp"></span>
+                </div>
+                <button id="clearAllDataBtn" class="clear-storage-btn"><i class="fas fa-eraser"></i> Limpar Rotas Atuais</button>
+            </div>
+
+            <div class="file-upload-section">
+                <div class="file-upload-item">
+                    <label for="historyFile" class="custom-file-upload" style="background-color: var(--button-recorrente-bg);">
+                        <i class="fas fa-history"></i> Incluir Historico...
+                    </label>
+                    <input type="file" id="historyFile" accept=".xlsx, .xls" multiple>
+                    <span class="loading-indicator" id="historyFileLoading"></span>
+                    <span class="file-timestamp" id="historyFileTimestamp"></span>
+                </div>
+                <button id="clearHistoryBtn" class="clear-storage-btn" style="background-color: #5a6268;"><i class="fas fa-eraser"></i> Limpar Histórico</button>
+            </div>
+
+
+            <div class="file-upload-section">
+                <div class="file-upload-item">
+                    <label for="dx22File" class="custom-file-upload" style="background-color: #527a7a;">
+                        <i class="fas fa-file-upload"></i> DX22...
+                    </label>
+                    <input type="file" id="dx22File" accept=".xlsx, .xls" multiple>
+                    <span class="loading-indicator" id="dx22FileLoading"></span>
+                    <span class="file-timestamp" id="dx22FileTimestamp"></span>
+                </div>
+                <button id="clearDx22Btn" class="clear-storage-btn"><i class="fas fa-eraser"></i> Limpar DX22</button>
+            </div>
+
+            <div class="file-upload-section">
+                <div class="file-upload-item">
+                    <label for="telematicaFile" class="custom-file-upload" style="background-color: #8c52ff; color: white;">
+                        <i class="fas fa-file-upload"></i> Telematicas...
+                    </label>
+                    <input type="file" id="telematicaFile" accept=".xlsx, .xls">
+                    <span class="loading-indicator" id="telematicaFileLoading"></span>
+                    <span class="file-timestamp" id="telematicaFileTimestamp"></span>
+                </div>
+                <button id="clearTelematicaBtn" class="clear-storage-btn"><i class="fas fa-eraser"></i> Limpar Telemática</button>
+            </div>
+
+            <div id="loading" class="loading-message" style="display:none;">
+                Carregando, processando e atualizando dados... Por favor, aguarde.
+            </div>
+
+            <div class="filters">
+                 <div id="activeFiltersContainer"></div>
+
+                <div class="filter-group">
+                    <label for="statusFilter">Status da Atividade:</label>
+                    <select id="statusFilter">
+                        <option value="">Todos</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label for="supervisorFilter">Supervisor:</label>
+                    <select id="supervisorFilter">
+                        <option value="">Todos</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label for="epoFilter">EPO:</label>
+                    <select id="epoFilter">
+                        <option value="">Todos</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label for="cityFilter">Cidade:</label>
+                    <span id="scoreTecnicosCidade" class="city-technicians-info">Técnicos: 0</span>
+                    <select id="cityFilter">
+                        <option value="">Todos</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label for="technicianFilter">Técnico:</label>
+                    <select id="technicianFilter">
+                        <option value="">Todos</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label for="contractFilter">Contrato:</label>
+                    <input type="text" id="contractFilter" placeholder="Digite o número do contrato">
+                </div>
+
+                <div class="filter-group">
+                    <label for="dddFilter">DDD:</label>
+                    <input type="text" id="dddFilter" placeholder="Ex: 11, 19">
+                </div>
+
+                <div class="filter-group">
+                    <label for="generalSearch">Busca Geral:</label>
+                    <input type="text" id="generalSearch" placeholder="Endereço, WO, Bairro...">
+                </div>
+
+                <div class="filter-buttons">
+                    <button id="hotAgendaBtn">Agenda Quente</button>
+                    <button id="coldAgendaBtn">Agenda Fria</button>
+                    <button id="clearAgendaFilterBtn" style="background-color: var(--button-agenda-clear-bg);">Limpar Filtro Agenda</button>
+                    <button id="baixadaForaToaBtn" style="background-color: var(--button-baixada-fora-toa-bg);">Baixada Fora TOA</button>
+                    <button id="streamingBtn" style="background-color: var(--button-streaming-bg);">Streaming</button>
+                    <button id="filterDx22Btn">Somente DX22</button>
+                    <button id="filterTelematicaBtn">Somente Telemática</</button>
+                    <button id="filterRecorrenteBtn">Somente Recorrentes</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="container" id="dataContainer">
+            <h2>Dados Consolidados e Filtrados</h2>
+
+            <div class="scorecard">
+                <div class="scorecard-item">
+                    <div class="scorecard-label">Visitas Concluídas</div>
+                    <div id="scoreConcluidas" class="scorecard-value concluidas">0</div>
+                </div>
+                <div class="scorecard-item">
+                    <div class="scorecard-label">Visitas Pendentes</div>
+                    <div id="scorePendentes" class="scorecard-value pendentes">0</div>
+                </div>
+                <div class="scorecard-item">
+                    <div class="scorecard-label">Baixadas fora TOA</div>
+                    <div id="scoreBaixadasForaTOA" class="scorecard-value baixadas-fora-toa">0</div>
+                </div>
+                 <div class="scorecard-item">
+                    <div class="scorecard-label">Visitas Recorrentes</div>
+                    <div id="scoreRecorrente" class="scorecard-value recorrente">0</div>
+                </div>
+                <div class="scorecard-item">
+                    <div class="scorecard-label">Visitas Streaming</div>
+                    <div id="scoreStreaming" class="scorecard-value streaming">0</div>
+                </div>
+                 <div class="scorecard-item">
+                    <div class="scorecard-label">Contratos DX22</div>
+                    <div id="scoreDx22Contracts" class="scorecard-value dx22-contracts">0</div>
+                </div>
+                <div class="scorecard-item">
+                    <div class="scorecard-label">Contratos Telemática</div>
+                    <div id="scoreTelematicaContracts" class="scorecard-value telematica-contracts">0</div>
+                </div>
+                <div class="scorecard-item">
+                    <div class="scorecard-label">Total de Visitas</div>
+                    <div id="scoreTotal" class="scorecard-value total">0</div>
+                </div>
+            </div>
+            
+            <div class="table-legend-wrapper">
+                <div class="table-legend">
+                    <span class="legend-item dx22-color">DX22</span>
+                    <span class="legend-item telematica-color">Telemática</span>
+                    <span class="legend-item baixa-toa-color">Baixa TOA</span>
+                    <span class="legend-item recorrente-color">Recorrente</span>
+                </div>
+                <div id="activeFilterCount">Nenhum filtro aplicado.</div>
+                <button id="exportMainBtn" class="export-btn"><i class="fas fa-file-excel"></i> Exportar para Excel</button>
+            </div>
+            <table id="dataTable">
+                <thead>
+                    <tr>
+                        </tr>
+                </thead>
+                <tbody>
+                    <tr><td colspan="10" class="no-data">Carregue um ou mais arquivos Excel para visualizar os dados.</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <div id="epoAnalysisContainer" class="container" style="display:none;">
+        <div class="section-header-wrapper">
+            <h2>Análise por EPO</h2>
+            <button id="exportEpoBtn" class="export-btn"><i class="fas fa-file-excel"></i> Exportar para Excel</button>
+        </div>
+        <p>Resumo de todas as visitas carregadas, agrupadas por EPO. Clique no nome da EPO para detalhar por cidade. Clique com o botão direito para mais opções.</p>
+        
+        <div class="filters">
+             <div class="filter-group">
+                <label for="epoAnalysisSupervisorFilter">Filtrar por Supervisor:</label>
+                <select id="epoAnalysisSupervisorFilter">
+                    <option value="">Todos</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="epoAnalysisEpoFilter">Filtrar por EPO:</label>
+                <select id="epoAnalysisEpoFilter">
+                    <option value="">Todas</option>
+                </select>
+            </div>
+        </div>
+
+        <table id="epoAnalysisTable">
+            <thead>
+                <tr>
+                    <th rowspan="2">EPO / Cidade</th>
+                    <th rowspan="2">Total Visitas</th>
+                    <th rowspan="2">Concl.</th>
+                    <th rowspan="2">Pend.</th>
+                    <th rowspan="2">B. Fora TOA</th>
+                    <th colspan="3">Desempenho Geral (%)</th>
+                    <th colspan="6">Desempenho Streaming</th>
+                    <th colspan="6">Desempenho Telemática</th>
+                </tr>
+                <tr>
+                    <!-- For Geral -->
+                    <th>Prod.</th>
+                    <th>Improd.</th>
+                    <th>Pend.</th>
+                    <!-- For Streaming -->
+                    <th>Total</th>
+                    <th>Prod.#</th>
+                    <th>Prod.%</th>
+                    <th>Improd.#</th>
+                    <th>Improd.%</th>
+                    <th>Pend.#</th>
+                    <!-- For Telemática -->
+                    <th>Total</th>
+                    <th>Prod.#</th>
+                    <th>Prod.%</th>
+                    <th>Improd.#</th>
+                    <th>Improd.%</th>
+                    <th>Pend.#</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
+
+    <div id="telXToaContainer" class="container" style="display:none;">
+        <div class="section-header-wrapper">
+            <h2>Análise Telemática vs. ROTA EXTRAIDA TOA</h2>
+            <button id="exportTelXToaBtn" class="export-btn"><i class="fas fa-file-excel"></i> Exportar para Excel</button>
+        </div>
+        <p>Lista de contratos do "Grupo SP Interior" (planilha Telemática) que <strong>NÃO</strong> estão presentes nas rotas do dia (ROTA EXTRAIDA TOA).</p>
+        <div class="filters">
+            <div class="filter-group">
+                <label for="telXToaContractFilter">Buscar Contrato:</label>
+                <input type="text" id="telXToaContractFilter" placeholder="Digite o número do contrato">
+            </div>
+            <div class="filter-group">
+                <label for="telXToaCityFilter">Filtrar por Cidade (Telemática):</label>
+                <select id="telXToaCityFilter"></select>
+            </div>
+        </div>
+        <table id="telXToaTable">
+            <thead>
+                <tr>
+                    <th>Contrato (Telemática)</th>
+                    <th>Cidade (Telemática)</th>
+                    <th>Cidade (DX22 - Referência)</th>
+                </tr>
+            </thead>
+            <tbody id="telXToaTableBody">
+            </tbody>
+        </table>
+    </div>
+
+    <div id="pendingSpecialsContainer" class="container" style="display:none;">
+        <div class="section-header-wrapper">
+            <h2>Análise de Pendentes Especiais</h2>
+            <button id="exportPendingSpecialsBtn" class="export-btn"><i class="fas fa-file-excel"></i> Exportar para Excel</button>
+        </div>
+        <p>Listas de contratos de Streaming e Telemática que ainda estão com status "Pendente", agrupados por Supervisor, EPO e Cidade.</p>
+
+        <div class="filters">
+             <div class="filter-group">
+                <label for="pendingSpecialsSupervisorFilter">Filtrar por Supervisor:</label>
+                <select id="pendingSpecialsSupervisorFilter">
+                    <option value="">Todos</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="pendingSpecialsEpoFilter">Filtrar por EPO:</label>
+                <select id="pendingSpecialsEpoFilter">
+                    <option value="">Todos</option>
+                </select>
+            </div>
+        </div>
+
+        <div id="pendingSpecialsContent">
+            <!-- O conteúdo será gerado dinamicamente aqui -->
+        </div>
+    </div>
+    
+    <div id="chartModal" class="chart-modal">
+        <div class="chart-modal-content">
+            <span id="chartModalClose" class="chart-modal-close">&times;</span>
+            <h2 id="chartTitle">Gráfico de Produtividade</h2>
+            <canvas id="productivityChart"></canvas>
+        </div>
+    </div>
+
+    <ul id="contextMenu">
+        <li id="contextMenuChart"><i class="fas fa-chart-pie"></i> Ver Gráfico de Produtividade</li>
+    </ul>
+
+    <script>
+    // =================================================================================
+    // INÍCIO: FUNÇÃO DE EXPORTAÇÃO PARA EXCEL COM ESTILOS (USANDO EXCELJS)
+    // =================================================================================
+    async function exportStyledExcel(tableId, sheetName = 'Sheet1', baseFileName = 'Export') {
+        try {
+            const table = document.getElementById(tableId);
+            if (!table) {
+                console.error(`Tabela com ID "${tableId}" não encontrada.`);
+                alert(`Erro: Tabela "${tableId}" não encontrada para exportação.`);
+                return;
+            }
+
+            const workbook = new ExcelJS.Workbook();
+            const worksheet = workbook.addWorksheet(sheetName);
+
+            // Define common border style
+            const thinBorder = {
+                top: { style: 'thin' },
+                left: { style: 'thin' },
+                bottom: { style: 'thin' },
+                right: { style: 'thin' }
+            };
+
+            // Estilos
+            const mainHeaderStyle = {
+                fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFC82333' } },
+                font: { color: { argb: 'FFFFFFFF' }, bold: true },
+                alignment: { vertical: 'middle', horizontal: 'center', wrapText: true },
+                border: thinBorder
+            };
+            const epoRowStyle = {
+                font: { bold: true },
+                fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFB0C4DE' } }, // LightSteelBlue for EPO rows (stronger)
+                border: thinBorder
+            };
+            const cityRowStyle = {
+                border: thinBorder,
+                fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE0FFFF' } } // LightCyan for City rows (different color)
+            };
+            const defaultCellStyle = { // Default cell style with borders
+                border: thinBorder
+            };
+            
+            // NEW STYLES FOR EPO ANALYSIS SUB-HEADERS (more vibrant)
+            const geralHeaderFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFA500' } }; // Vibrant Orange
+            const streamingHeaderFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF800080' } }; // Vibrant Purple
+            const telematicaHeaderFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFF0000' } }; // Strong Red
+
+            // Estilos de preenchimento de linha para a tabela principal (based on classes)
+            const streamingFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF0EAF7' } }; // Light Purple
+            const telematicaFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFDEEEE' } }; // Light Red
+            const recorrenteFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE6F2FF' } }; // Light Blue
+            const dx22Fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEAF6EB' } }; // Light Green
+            const baixadaForaToaFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFF3E6' } }; // Light Orange
+
+            let excelRowIndex = 1;
+
+            if (tableId === 'epoAnalysisTable') {
+                // Manually create the two-row header for EPO Analysis export
+                const headerRow1 = worksheet.getRow(excelRowIndex++);
+                const headerRow2 = worksheet.getRow(excelRowIndex++);
+                
+                const headerConfig = [
+                    { text: 'EPO / Cidade', rowspan: 2, key: 'epo' },
+                    { text: 'Total Visitas', rowspan: 2, key: 'total' },
+                    { text: 'Concl.', rowspan: 2, key: 'concl' },
+                    { text: 'Pend.', rowspan: 2, key: 'pend' },
+                    { text: 'B. Fora TOA', rowspan: 2, key: 'btoa' },
+                    { text: 'Desempenho Geral (%)', colspan: 3, key: 'geral' },
+                    { text: 'Desempenho Streaming', colspan: 6, key: 'stream' },
+                    { text: 'Desempenho Telemática', colspan: 6, key: 'tele' }
+                ];
+                
+                const subHeaderConfig = {
+                    geral: ['Prod.', 'Improd.', 'Pend.'],
+                    stream: ['Total', 'Prod.#', 'Prod.%', 'Improd.#', 'Improd.%', 'Pend.#'],
+                    tele: ['Total', 'Prod.#', 'Prod.%', 'Improd.#', 'Improd.%', 'Pend.#']
+                };
+
+                let col = 1;
+                headerConfig.forEach(h => {
+                    const cell = headerRow1.getCell(col);
+                    cell.value = h.text;
+                    cell.style = mainHeaderStyle;
+                    if (h.rowspan === 2) {
+                        worksheet.mergeCells(cell.address, headerRow2.getCell(col).address);
+                        col++;
+                    } else if (h.colspan) {
+                        worksheet.mergeCells(cell.address, headerRow1.getCell(col + h.colspan - 1).address);
+                        subHeaderConfig[h.key].forEach(subH => {
+                            const subCell = headerRow2.getCell(col);
+                            subCell.value = subH;
+                            // Apply specific fill styles for sub-headers
+                            if (h.key === 'geral') {
+                                subCell.style = { ...mainHeaderStyle, fill: geralHeaderFill };
+                            } else if (h.key === 'stream') {
+                                subCell.style = { ...mainHeaderStyle, fill: streamingHeaderFill };
+                            } else if (h.key === 'tele') {
+                                subCell.style = { ...mainHeaderStyle, fill: telematicaHeaderFill };
+                            } else {
+                                subCell.style = mainHeaderStyle;
+                            }
+                            col++;
+                        });
+                    }
+                });
+
+                // Export data rows for EPO Analysis
+                const mainEpoRows = table.querySelectorAll(':scope > tbody > tr.epo-main-row');
+                mainEpoRows.forEach(epoTr => {
+                    const epoDataRow = worksheet.getRow(excelRowIndex++);
+                    epoTr.querySelectorAll('td').forEach((td, colIndex) => {
+                        const cell = epoDataRow.getCell(colIndex + 1);
+                        const cellValue = td.innerText.replace(/ ▾| ▸/g, '').trim();
+                        cell.value = cellValue.includes('%') ? cellValue : (isNaN(cellValue) || cellValue.trim() === '' ? cellValue : Number(cellValue));
+                        cell.style = epoRowStyle;
+                    });
+
+                    const epoName = epoTr.dataset.epoName;
+                    if (epoName) {
+                        const detailsRow = epoTr.nextElementSibling;
+                        const epoId = epoName.replace(/[^a-zA-Z0-9]/g, '');
+                        if (detailsRow && detailsRow.id === `details-for-${epoId}`) {
+                            const cityRowsInDetail = detailsRow.querySelectorAll('.city-detail-row');
+                            cityRowsInDetail.forEach(cityTr => {
+                                const cityDataRow = worksheet.getRow(excelRowIndex++);
+                                cityTr.querySelectorAll('td').forEach((td, colIndex) => {
+                                    const cell = cityDataRow.getCell(colIndex + 1);
+                                    const cellValue = td.innerText;
+                                    cell.value = cellValue.includes('%') ? cellValue : (isNaN(cellValue) || cellValue.trim() === '' ? cellValue : Number(cellValue));
+                                    cell.style = cityRowStyle; // Apply new cityRowStyle
+                                    if (colIndex === 0) {
+                                        cell.alignment = { indent: 1 };
+                                    }
+                                });
+                            });
+                        }
+                    }
+                });
+            } else {
+                 // Standard export for other tables (dataTable and telXToaTable)
+                const headerRows = table.querySelectorAll(':scope > thead > tr');
+                headerRows.forEach((headerRow) => {
+                    const row = worksheet.getRow(excelRowIndex++);
+                    headerRow.querySelectorAll('th').forEach((th, colIndex) => {
+                        const cell = row.getCell(colIndex + 1);
+                        cell.value = th.innerText;
+                        cell.style = mainHeaderStyle;
+                    });
+                });
+                
+                const bodyRows = table.querySelectorAll('tbody > tr');
+                bodyRows.forEach(bodyRow => {
+                    const row = worksheet.getRow(excelRowIndex++);
+                    let rowFill = null;
+                    
+                    // Determine row fill based on classes for dataTable
+                    if (tableId === 'dataTable') {
+                        if (bodyRow.classList.contains('streaming-match')) rowFill = streamingFill;
+                        else if (bodyRow.classList.contains('telematica-match')) rowFill = telematicaFill;
+                        else if (bodyRow.classList.contains('recorrente-match')) rowFill = recorrenteFill;
+                        else if (bodyRow.classList.contains('dx22-match')) rowFill = dx22Fill;
+                        else if (bodyRow.classList.contains('baixada-fora-toa')) rowFill = baixadaForaToaFill;
+                    }
+
+                    bodyRow.querySelectorAll('td').forEach((td, colIndex) => {
+                        const cell = row.getCell(colIndex + 1);
+                        const cellValue = td.innerText;
+                        cell.value = isNaN(cellValue) || cellValue.trim() === '' ? cellValue : Number(cellValue);
+                        cell.style = { ...defaultCellStyle }; // Apply default cell style with borders
+                        if (rowFill) cell.fill = rowFill; // Apply specific row color if applicable
+                    });
+                });
+            }
+
+
+            // Auto-ajustar colunas
+            worksheet.columns.forEach(column => {
+                let maxLength = 0;
+                column.eachCell({ includeEmpty: true }, cell => {
+                    let columnLength = cell.value ? cell.value.toString().length : 10;
+                    if (columnLength > maxLength) {
+                        maxLength = columnLength;
+                    }
+                });
+                column.width = maxLength < 10 ? 10 : maxLength + 2;
+            });
+
+            const date = new Date();
+            const timestamp = `${date.getFullYear()}${(date.getMonth() + 1).toString().padStart(2, '0')}${date.getDate().toString().padStart(2, '0')}_${date.getHours().toString().padStart(2, '0')}${date.getMinutes().toString().padStart(2, '0')}`;
+            const fileName = `${baseFileName}_${timestamp}.xlsx`;
+            
+            const buffer = await workbook.xlsx.writeBuffer();
+            const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+        } catch (error) {
+            console.error("Erro ao exportar para Excel:", error);
+            alert("Ocorreu um erro inesperado durante a exportação para Excel.");
+        }
+    }
+
+
+    // =================================================================================
+    // INÍCIO: FUNÇÕES DE AJUDA PARA O INDEXEDDB
+    // =================================================================================
+    function openDB() {
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.open('AnalisadorRotasDB_v9', 2); /* INCREMENTED DB VERSION TO 2 */
+
+            request.onupgradeneeded = (event) => {
+                const db = event.target.result;
+                if (!db.objectStoreNames.contains('rotas')) {
+                    db.createObjectStore('rotas', { keyPath: 'numeroWO' });
+                }
+                if (!db.objectStoreNames.contains('dx22')) {
+                    db.createObjectStore('dx22', { keyPath: 'key' });
+                }
+                if (!db.objectStoreNames.contains('telematica')) {
+                    db.createObjectStore('telematica', { keyPath: 'key' });
+                }
+                if (!db.objectStoreNames.contains('darkMode')) {
+                    db.createObjectStore('darkMode', { keyPath: 'key' });
+                }
+                 if (!db.objectStoreNames.contains('historyFileSignatures')) {
+                    db.createObjectStore('historyFileSignatures', { keyPath: 'signature' });
+                }
+                if (!db.objectStoreNames.contains('historicoRecorrencia')) {
+                    db.createObjectStore('historicoRecorrencia', { keyPath: 'compositeKey' });
+                }
+                if (!db.objectStoreNames.contains('fileUploadTimestamps')) { /* New store added in version 2 */
+                    db.createObjectStore('fileUploadTimestamps', { keyPath: 'id' });
+                }
+            };
+
+            request.onsuccess = (event) => {
+                resolve(event.target.result);
+            };
+
+            request.onerror = (event) => {
+                console.error("Erro no IndexedDB:", event.target.error);
+                reject(event.target.error);
+            };
+        });
+    }
+
+    async function saveData(storeName, data) {
+        const db = await openDB();
+        const transaction = db.transaction(storeName, 'readwrite');
+        const store = transaction.objectStore(storeName);
+        
+        if (['rotas', 'dx22', 'telematica', 'darkMode', 'fileUploadTimestamps'].includes(storeName)) { /* Added fileUploadTimestamps */
+            store.clear();
+        }
+
+        const putPromises = [];
+
+        if (Array.isArray(data)) { 
+             data.forEach(item => {
+                if (storeName === 'rotas' && item.numeroWO) {
+                   putPromises.push(store.put(item));
+                }
+            });
+        } else if (data instanceof Map) {
+             data.forEach((value, key) => {
+                if (storeName === 'historicoRecorrencia') {
+                     putPromises.push(store.put({ compositeKey: key, datas: value }));
+                } else if (storeName === 'telematica') {
+                     putPromises.push(store.put({ key: key, value: value }));
+                } else {
+                     putPromises.push(store.put({ key, value }));
+                }
+            });
+        } else if (data instanceof Set) { 
+            data.forEach(value => {
+                 if (storeName === 'historyFileSignatures') {
+                    putPromises.push(store.put({signature: value}));
+                } else {
+                    putPromises.push(store.put({ key: value, value: true }));
+                }
+            });
+        } else if (storeName === 'fileUploadTimestamps') { /* Handle fileUploadTimestamps object */
+            for (const key in data) {
+                if (data.hasOwnProperty(key)) {
+                    putPromises.push(store.put({ id: key, timestamp: data[key] }));
+                }
+            }
+        }
+        else {
+            putPromises.push(store.put({ key: storeName, value: data }));
+        }
+
+        return new Promise((resolve, reject) => {
+            transaction.oncomplete = () => resolve();
+            transaction.onerror = (event) => reject(event.target.error);
+        });
+    }
+
+    async function loadData(storeName) {
+        const db = await openDB();
+        const transaction = db.transaction(storeName, 'readonly');
+        const store = transaction.objectStore(storeName);
+        const request = store.getAll();
+
+        return new Promise((resolve, reject) => {
+            request.onsuccess = (event) => {
+                const result = event.target.result;
+                if (storeName === 'dx22' || storeName === 'telematica') {
+                    const map = new Map();
+                    result.forEach(item => map.set(item.key, item.value));
+                    resolve(map);
+                } else if (storeName === 'darkMode'){
+                    resolve(result.length > 0 ? result[0].value : false);
+                } else if (storeName === 'historyFileSignatures') {
+                    const set = new Set();
+                    result.forEach(item => set.add(item.signature));
+                    resolve(set);
+                } else if (storeName === 'historicoRecorrencia') {
+                    const map = new Map();
+                    result.forEach(item => map.set(item.compositeKey, item.datas));
+                    resolve(map);
+                } else if (storeName === 'fileUploadTimestamps') { /* Load fileUploadTimestamps */
+                    const timestamps = {};
+                    result.forEach(item => { timestamps[item.id] = item.timestamp; });
+                    resolve(timestamps);
+                }
+                else {
+                    resolve(result);
+                }
+            };
+            request.onerror = (event) => reject(event.target.error);
+        });
+    }
+
+    async function clearData(storeName) {
+        const db = await openDB();
+        const transaction = db.transaction(storeName, 'readwrite');
+        const store = transaction.objectStore(storeName);
+        store.clear();
+        return new Promise((resolve, reject) => {
+            transaction.oncomplete = () => resolve();
+            transaction.onerror = (event) => reject(event.target.error);
+        });
+    }
+    // =================================================================================
+    // FIM: FUNÇÕES DE AJUDA PARA O INDEXEDDB
+    // =================================================================================
+
+    // =================================================================================
+    // INÍCIO: CÓDIGO PRINCIPAL DA APLICAÇÃO
+    // =================================================================================
+    const excelFilesInput = document.getElementById('excelFiles');
+    const historyFileInput = document.getElementById('historyFile');
+    const dx22FileInput = document.getElementById('dx22File');
+    const clearDx22Btn = document.getElementById('clearDx22Btn');
+    const telematicaFileInput = document.getElementById('telematicaFile');
+    const clearTelematicaBtn = document.getElementById('clearTelematicaBtn');
+    const scoreRecorrente = document.getElementById('scoreRecorrente');
+    const filterRecorrenteBtn = document.getElementById('filterRecorrenteBtn');
+
+    const activeFiltersContainer = document.getElementById('activeFiltersContainer');
+    const statusFilter = document.getElementById('statusFilter');
+    const supervisorFilter = document.getElementById('supervisorFilter');
+    const technicianFilter = document.getElementById('technicianFilter');
+    const contractFilter = document.getElementById('contractFilter');
+    const cityFilter = document.getElementById('cityFilter');
+    const dddFilter = document.getElementById('dddFilter');
+    const generalSearch = document.getElementById('generalSearch');
+    const epoFilter = document.getElementById('epoFilter');
+    const dataTableBody = document.querySelector('#dataTable tbody');
+    const loadingMessage = document.getElementById('loading');
+    const hotAgendaBtn = document.getElementById('hotAgendaBtn');
+    const coldAgendaBtn = document.getElementById('coldAgendaBtn');
+    const clearAgendaFilterBtn = document.getElementById('clearAgendaFilterBtn');
+    const clearAllDataBtn = document.getElementById('clearAllDataBtn');
+    const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+    
+    // Botões de exportação
+    const exportMainBtn = document.getElementById('exportMainBtn');
+    const exportEpoBtn = document.getElementById('exportEpoBtn');
+    const exportTelXToaBtn = document.getElementById('exportTelXToaBtn');
+    const exportPendingSpecialsBtn = document.getElementById('exportPendingSpecialsBtn');
+
+    const baixadaForaToaBtn = document.getElementById('baixadaForaToaBtn');
+    const streamingBtn = document.getElementById('streamingBtn');
+    const filterDx22Btn = document.getElementById('filterDx22Btn');
+    const filterTelematicaBtn = document.getElementById('filterTelematicaBtn');
+    const activeFilterCountDiv = document.getElementById('activeFilterCount');
+
+    const scoreConcluidas = document.getElementById('scoreConcluidas');
+    const scorePendentes = document.getElementById('scorePendentes');
+    const scoreTotal = document.getElementById('scoreTotal');
+    const scoreBaixadasForaTOA = document.getElementById('scoreBaixadasForaTOA');
+    const scoreTecnicosCidade = document.getElementById('scoreTecnicosCidade');
+    const scoreStreaming = document.getElementById('scoreStreaming');
+    const scoreDx22Contracts = document.getElementById('scoreDx22Contracts');
+    const scoreTelematicaContracts = document.getElementById('scoreTelematicaContracts');
+
+    const darkModeToggle = document.getElementById('darkModeToggle');
+    const homeButton = document.getElementById('homeButton');
+
+    const epoAnalysisBtn = document.getElementById('epoAnalysisBtn');
+    const mainContentContainer = document.getElementById('mainContentContainer');
+    const epoAnalysisContainer = document.getElementById('epoAnalysisContainer');
+    const epoAnalysisTableBody = document.querySelector('#epoAnalysisTable tbody');
+    const epoAnalysisSupervisorFilter = document.getElementById('epoAnalysisSupervisorFilter');
+    const epoAnalysisEpoFilter = document.getElementById('epoAnalysisEpoFilter');
+    
+    const telXToaBtn = document.getElementById('telXToaBtn');
+    const telXToaContainer = document.getElementById('telXToaContainer');
+    const telXToaTableBody = document.getElementById('telXToaTableBody');
+    const telXToaContractFilter = document.getElementById('telXToaContractFilter');
+    const telXToaCityFilter = document.getElementById('telXToaCityFilter');
+    
+    const pendingSpecialsBtn = document.getElementById('pendingSpecialsBtn');
+    const pendingSpecialsContainer = document.getElementById('pendingSpecialsContainer');
+    const pendingSpecialsContent = document.getElementById('pendingSpecialsContent');
+    const pendingSpecialsSupervisorFilter = document.getElementById('pendingSpecialsSupervisorFilter');
+    const pendingSpecialsEpoFilter = document.getElementById('pendingSpecialsEpoFilter');
+    
+    const chartModal = document.getElementById('chartModal');
+    const chartModalClose = document.getElementById('chartModalClose');
+    const chartTitle = document.getElementById('chartTitle');
+    let productivityChartInstance = null;
+    
+    const contextMenu = document.getElementById('contextMenu');
+    
+    let originalData = [];
+    let dx22Data = new Map();
+    let telematicaContracts = new Map();
+    let filteredDataOnScreen = [];
+    let processedHistoryFileSignatures = new Set();
+    let historicoRecorrencia = new Map(); 
+    let currentRecorrenteFilter = false;
+    let fileUploadTimestamps = {}; /* New: Object to store timestamps */
+
+    let currentAgendaFilter = '';
+    let currentCustomStatusFilter = '';
+    let currentStreamingFilter = false;
+    let currentDx22Filter = false;
+    let currentTelematicaFilter = false;
+
+    const dddPorCidade = { "ADAMANTINA": "18", "AGUDOS": "14", "ALVARES MACHADO": "18", "AMERICANA": "19", "AMERICO BRASILIENSE": "16", "AMPARO": "19", "ANDRADINA": "18", "APARECIDA": "12", "ARACATUBA": "18", "ARARAQUARA": "16", "ARARAS": "19", "ARTUR NOGUEIRA": "19", "AVARE": "14", "BADY BASSITT": "17", "BARRETOS": "17", "BARRINHA": "16", "BATATAIS": "16", "BAURU": "14", "BEBEDOURO": "17", "BERTIOGA": "13", "BIRIGUI": "18", "BOITUVA": "15", "BOTUCATU": "14", "CACAPAVA": "12", "CACHOEIRA PAULISTA": "12", "CAMPINAS": "19", "CAMPOS DO JORDAO": "12", "CAPIVARI": "19", "CARAGUATATUBA": "12", "CASA BRANCA": "19", "CATANDUVA": "17", "CERQUILHO": "15", "CORDEIROPOLIS": "19", "COSMOPOLIS": "19", "CRAVINHOS": "16", "CRUZEIRO": "12", "CUBATAO": "13", "DESCALVADO": "19", "DRACENA": "18", "ELIAS FAUSTO": "19", "ESPIRITO SANTO DO PINHAL": "19", "FERNANDOPOLIS": "17", "FRANCA": "16", "GARCA": "14", "GUAIRA": "17", "GUAPIACU": "17", "GUARARAPES": "18", "GUARATINGUETA": "12", "GUARUJA": "13", "HORTOLANDIA": "19", "IBATE": "16", "IBIUNA": "15", "INDAIATUBA": "19", "IPERO": "15", "ITANHAEM": "13", "ITAPETININGA": "15", "ITAPEVA": "15", "ITAPIRA": "19", "ITUVERAVA": "16", "JABOTICABAL": "16", "JACAREI": "12", "JAGUARIUNA": "19", "JALES": "17", "JARDINOPOLIS": "16", "JAU": "14", "JOSE BONIFACIO": "17", "LARANJAL PAULISTA": "15", "LEME": "19", "LENCOIS PAULISTA": "14", "LIMEIRA": "19", "LINS": "14", "LORENA": "12", "LOUVEIRA": "19", "MARILIA": "14", "MATAO": "16", "MIRANDOPOLIS": "18", "MIRASSOL": "17", "MOCOCA": "19", "MOGI GUACU": "19", "MOGI MIRIM": "19", "MONGAGUA": "13", "MONTE ALTO": "16", "MONTE MOR": "19", "NOVA ODESSA": "19", "OLIMPIA": "17", "ORLANDIA": "16", "OURINHOS": "14", "PAULINIA": "19", "PEDREIRA": "19", "PENAPOLIS": "18", "PERUIBE": "13", "PIEDADE": "15", "PINDAMONHANGABA": "12", "PIRACICABA": "19", "PIRASSUNUNGA": "19", "PONTAL": "16", "PORTO FELIZ": "15", "PORTO FERREIRA": "19", "POTIM": "12", "POTIRENDABA": "17", "PRAIA GRANDE": "13", "PRESIDENTE BERNARDES": "18", "PRESIDENTE PRUDENTE": "18", "PROMISSAO": "14", "RAFARD": "19", "REGISTRO": "13", "RIBEIRAO PRETO": "16", "RIO CLARO": "19", "SANTA BARBARA D'OESTE": "19", "SANTA CRUZ DAS PALMEIRAS": "19", "SANTA CRUZ DO RIO PARDO": "14", "SANTA GERTRUDES": "19", "SANTA ROSA DE VITERBO": "16", "SANTOS": "13", "SANTOS ABC": "13", "SAO CARLOS": "16", "SAO JOAO DA BOA VISTA": "19", "SAO JOAQUIM DA BARRA": "16", "SAO JOSE DO RIO PARDO": "19", "SAO JOSE DO RIO PRETO": "17", "SAO JOSE DOS CAMPOS": "12", "SAO SEBASTIAO": "12", "SAO VICENTE": "13", "SAO PAULO": "11", "SERRA NEGRA": "19", "SERRANA": "16", "SERTAOZINHO": "16", "SOROCABA": "15", "SUMARE": "19", "TAMBAU": "19", "TATUI": "15", "TAUBATE": "12", "TIETE": "15", "TREMEMBE": "12", "UBATUBA": "12", "VALINHOS": "19", "VALPARAISO": "18", "VINHEDO": "19", "VOTORANTIM": "15", "VOTUPORANGA": "17" };
+    const codigosCidadePorCidade = { "ADAMANTINA": "323", "AGUDOS": "411", "ALVARES MACHADO": "551", "AMERICANA": "386", "AMERICO BRASILIENSE": "624", "AMPARO": "538", "ANDRADINA": "697", "APARECIDA": "399", "ARACATUBA": "404", "ARARAQUARA": "409", "ARARAS": "413", "ARTUR NOGUEIRA": "419", "AVARE": "92", "BADY BASSITT": "124", "BARRETOS": "302", "BARRINHA": "16", "BATATAIS": "448", "BAURU": "8", "BEBEDOURO": "388", "BERTIOGA": "456", "BIRIGUI": "450", "BOITUVA": "464", "BOTUCATU": "471", "CACAPAVA": "487", "CACHOEIRA PAULISTA": "488", "CAMPINAS": "52", "CAMPOS DO JORDAO": "28", "CAPIVARI": "530", "CARAGUATATUBA": "553", "CASA BRANCA": "202", "CATANDUVA": "543", "CERQUILHO": "296", "CORDEIROPOLIS": "432", "COSMOPOLIS": "565", "CRAVINHOS": "569", "CRUZEIRO": "572", "CUBATAO": "573", "DESCALVADO": "576", "DRACENA": "586", "ELIAS FAUSTO": "595", "ESPIRITO SANTO DO PINHAL": "970", "FERNANDOPOLIS": "17", "FRANCA": "56", "GARCA": "232", "GUAIRA": "364", "GUAPIACU": "381", "GUARARAPES": "496", "GUARATINGUETA": "656", "GUARUJA": "659", "HORTOLANDIA": "668", "IBATE": "674", "IBIUNA": "755", "INDAIATUBA": "54", "IPERO": "15", "ITANHAEM": "712", "ITAPETININGA": "715", "ITAPEVA": "166", "ITAPIRA": "183", "ITUVERAVA": "574", "JABOTICABAL": "410", "JACAREI": "756", "JAGUARIUNA": "761", "JALES": "492", "JARDINOPOLIS": "575", "JAU": "769", "JOSE BONIFACIO": "662", "LARANJAL PAULISTA": "859", "LEME": "905", "LENCOIS PAULISTA": "913", "LIMEIRA": "791", "LINS": "948", "LORENA": "12", "LOUVEIRA": "798", "MARILIA": "820", "MATAO": "297", "MIRANDOPOLIS": "392", "MIRASSOL": "850", "MOCOCA": "431", "MOGI GUACU": "863", "MOGI MIRIM": "865", "MONGAGUA": "869", "MONTE ALTO": "534", "MONTE MOR": "882", "NOVA ODESSA": "910", "OLIMPIA": "987", "ORLANDIA": "592", "OURINHOS": "71", "PAULINIA": "954", "PEDREIRA": "966", "PENAPOLIS": "495", "PERUIBE": "972", "PIEDADE": "15", "PINDAMONHANGABA": "976", "PIRACICABA": "9", "PIRASSUNUNGA": "747", "PONTAL": "844", "PORTO FELIZ": "15", "PORTO FERREIRA": "908", "POTIM": "12", "POTIRENDABA": "17", "PRAIA GRANDE": "27", "PRESIDENTE BERNARDES": "25", "PRESIDENTE PRUDENTE": "36", "PROMISSAO": "74", "RAFARD": "19", "REGISTRO": "13", "RIBEIRAO PRETO": "16", "RIO CLARO": "19", "SANTA BARBARA D'OESTE": "103", "SANTA GERTRUDES": "793", "SANTA CRUZ DO RIO PARDO": "108", "SANTA CRUZ DAS PALMEIRAS": "743", "SANTA ROSA DE VITERBO": "16", "SANTOS": "13", "SANTOS ABC": "897", "SAO CARLOS": "53", "SAO JOAO DA BOA VISTA": "200", "SAO JOAQUIM DA BARRA": "615", "SAO JOSE DO RIO PARDO": "315", "SAO JOSE DO RIO PRETO": "6", "SAO JOSE DOS CAMPOS": "162", "SAO SEBASTIAO": "182", "SAO VICENTE": "187", "SAO PAULO": "11", "SERRA NEGRA": "579", "SERRANA": "587", "SERTAOZINHO": "195", "SOROCABA": "7", "SUMARE": "207", "TAMBAU": "19", "TATUI": "15", "TAUBATE": "12", "TIETE": "15", "TREMEMBE": "12", "UBATUBA": "12", "VALINHOS": "19", "VALPARAISO": "18", "VINHEDO": "19", "VOTORANTIM": "15", "VOTUPORANGA": "17" };
+    const epoPorCidade = { "AMERICANA": "ANTEC Americana", "HORTOLANDIA": "ANTEC Americana", "NOVA ODESSA": "ANTEC Americana", "SANTA BARBARA D'OESTE": "ANTEC Americana", "ARACATUBA": "CANTOIA DDD14/18", "BIRIGUI": "CANTOIA DDD14/18", "GUARARAPES": "CANTOIA DDD14/18", "MIRANDOPOLIS": "CANTOIA DDD14/18", "PENAPOLIS": "CANTOIA DDD14/18", "VALPARAISO": "CANTOIA DDD14/18", "AMERICO BRASILIENSE": "DANLEX DDD16/17", "ARARAQUARA": "DANLEX DDD16/17", "MATAO": "DANLEX DDD16/17", "MONTE ALTO": "DANLEX DDD16/17", "BERTIOGA": "DANLEX DDD13", "CUBATAO": "DANLEX DDD13", "GUARUJA": "DANLEX DDD13", "ITANHAEM": "DANLEX DDD13", "MONGAGUA": "DANLEX DDD13", "PERUIBE": "DANLEX DDD13", "PRAIA GRANDE": "DANLEX DDD13", "REGISTRO": "DANLEX DDD13", "SANTOS": "DANLEX DDD13", "SAO VICENTE": "DANLEX DDD13", "AGUDOS": "BASIC DDD14", "AVARE": "BASIC DDD14", "BAURU": "BASIC DDD14", "BOTUCATU": "BASIC DDD14", "GARCA": "GRANSAT", "JAU": "BASIC DDD14", "LENCOIS PAULISTA": "BASIC DDD14", "LINS": "BASIC DDD14", "MARILIA": "GRANSAT", "OURINHOS": "BASIC DDD14", "PROMISSAO": "CANTOIA DDD14/18", "SANTA CRUZ DO RIO PARDO": "BASIC DDD14", "CAMPINAS": "ANTEC Campinas", "INDAIATUBA": "DANLEX DDD19", "LOUVEIRA": "NEW TIME", "VALINHOS": "ANTEC Campinas", "VINHEDO": "ANTEC Campinas", "BATATAIS": "BASIC DDD16/17", "FRANCA": "DANLEX DDD16/17", "ITUVERAVA": "DANLEX DDD16/17", "ORLANDIA": "DANLEX DDD16/17", "SAO JOAQUIM DA BARRA": "DANLEX DDD16/17", "SUMARE": "ANTEC Americana", "ARARAS": "ANTEC Americana", "LIMEIRA": "ANTEC Americana", "CORDEIROPOLIS": "NEW TIME", "DESCALVADO": "NEW TIME", "LEME": "NEW TIME", "PIRASSUNUNGA": "NEW TIME", "PORTO FERREIRA": "NEW TIME", "RIO CLARO": "ANTEC Americana", "SANTA GERTRUDES": "NEW TIME", "SANTA ROSA DE VITERBO": "BASIC DDD16/17", "AMPARO": "NEW TIME", "CASA BRANCA": "NEW TIME", "ESPIRITO SANTO DO PINHAL": "NEW TIME", "ITAPIRA": "NEW TIME", "JAGUARIUNA": "NEW TIME", "MOGI GUACU": "ANTEC Campinas", "MOGI MIRIM": "ANTEC Campinas", "MOCOCA": "NEW TIME", "PEDREIRA": "NEW TIME", "SANTA CRUZ DAS PALMEIRAS": "NEW TIME", "SAO JOAO DA BOA VISTA": "NEW TIME", "SAO JOSE DO RIO PARDO": "NEW TIME", "SERRA NEGRA": "NEW TIME", "TAMBAU": "NEW TIME", "ARTUR NOGUEIRA": "ANTEC Campinas", "COSMOPOLIS": "ANTEC Campinas", "PAULINIA": "ANTEC Campinas", "CAPIVARI": "ANTEC Americana", "ELIAS FAUSTO": "ANTEC Americana", "MONTE MOR": "ANTEC Americana", "RAFARD": "ANTEC Americana", "PIRACICABA": "EAM", "ANDRADINA": "SCRIPT CALL", "DRACENA": "SCRIPT CALL", "PRESIDENTE PRUDENTE": "SCRIPT CALL", "ADAMANTINA": "SCRIPT CALL", "ALVARES MACHADO": "SCRIPT CALL", "PRESIDENTE BERNARDES": "SCRIPT CALL", "BARRINHA": "BASIC DDD16/17", "CRAVINHOS": "BASIC DDD16/17", "JARDINOPOLIS": "BASIC DDD16/17", "PONTAL": "BASIC DDD16/17", "JABOTICABAL": "DANLEX DDD16/17", "SERRANA": "BASIC DDD16/17", "RIBEIRAO PRETO": "BASIC DDD16/17", "SERTAOZINHO": "BASIC DDD16/17", "IBATE": "DANLEX DDD16/17", "SAO CARLOS": "DANLEX DDD16/17", "BADY BASSITT": "CANTOIA DDD17", "BEBEDOURO": "DANLEX DDD16/17", "CATANDUVA": "CANTOIA DDD17", "JOSE BONIFACIO": "CANTOIA DDD17", "FERNANDOPOLIS": "CANTOIA DDD17", "GUAPIACU": "CANTOIA DDD17", "JALES": "CANTOIA DDD17", "MIRASSOL": "CANTOIA DDD17", "BARRETOS": "BASIC DDD16/17", "POTIRENDABA": "CANTOIA DDD17", "GUAIRA": "BASIC DDD16/17", "SAO JOSE DO RIO PRETO": "CANTOIA DDD17", "OLIMPIA": "BASIC DDD16/17", "VOTUPORANGA": "CANTOIA DDD17", "JACAREI": "DANLEX DDD12", "SAO JOSE DOS CAMPOS": "DANLEX DDD12", "CARAGUATATUBA": "ARCAD", "SAO SEBASTIAO": "ARCAD", "UBATUBA": "ARCAD", "TATUI": "ACESSO", "IPERO": "ACESSO", "TIETE": "ANTEC Sorocaba", "IBIUNA": "ACESSO", "CERQUILHO": "ACESSO", "ITAPETININGA": "ANTEC Sorocaba", "ITAPEVA": "ACESSO", "LARANJAL PAULISTA": "ACESSO", "PIEDADE": "ACESSO", "PORTO FELIZ": "ANTEC Sorocaba", "SOROCABA": "ANTEC Sorocaba", "BOITUVA": "ACESSO", "VOTORANTIM": "ANTEC Sorocaba", "CACAPAVA": "DANLEX DDD12", "CAMPOS DO JORDAO": "ARCAD", "PINDAMONHANGABA": "DANLEX DDD12", "TREMEMBE": "DANLEX DDD12", "TAUBATE": "DANLEX DDD12", "APARECIDA": "ARCAD", "CACHOEIRA PAULISTA": "ARCAD", "CRUZEIRO": "ARCAD", "GUARATINGUETA": "ARCAD", "LORENA": "ARCAD", "POTIM": "ARCAD", "SAO PAULO": "DANLEX" };
+    const supervisorPorDDD = { '16': 'Diogenes', '17': 'Diogenes', '14': 'Samuel', '18': 'Samuel', '12': 'Jorge', '13': 'Jorge', '15': 'Misael', '19': 'Misael' };
+    const dddsPorSupervisor = { 'Diogenes': ['16', '17'], 'Samuel': ['14', '18'], 'Jorge': ['12', '13'], 'Misael': ['15', '19'] };
+    const columnMapping = { 'classificacaoStatus': 'Status', 'Recurso': 'Técnico', 'Login do Técnico': 'Login', 'Recorr.': 'Nº Recorr.', 'Datas Recorr.': 'Datas Recorr.', 'Endereço': 'Endereço', 'Cidade': 'Cidade', 'DDD': 'DDD', 'Cód. Cidade': 'Cód. Cidade', 'Intervalo de Tempo': 'Janela de Serviço', 'Contrato': 'Contrato', 'Categorias da Capacidade': 'Classe', 'Caso crítico (ouvidoria)': 'Caso Crítico', 'Cód de Baixa 1': 'Cód. Baixa', 'Motivo de Fechamento Externo': 'Motivo Fech. Ext.' };
+    const dx22DisplayColumns = { 'CIDADE DE RETIRADA': 'Cidade Retirada (DX22)', 'END': 'Endereço Retirada (DX22)', 'OBSERVAÇÃO': 'Observação (DX22)', 'EPO RESPONSÁVEL': 'EPO Responsável' };
+    const telematicaDisplayColumn = { 'TelematicaMatch': 'Telemática' };
+    const requiredClasses = ['Classe 8', 'Classe 9', 'Classe 10', 'Classe 12', 'Classe 14'];
+    const streamingClass = 'Classe 14';
+    const hotAgendaIntervals = ['8 - 12', '12 - 18'];
+    const coldAgendaIntervals = ['8 - 22'];
+
+    let displayedColumnKeys = [];
+    let displayedColumnTitles = [];
+
+    // =================================================================================
+    // AQUI COMEÇAM AS FUNÇÕES PRINCIPAIS - A ORDEM É IMPORTANTE
+    // =================================================================================
+
+    function updateDisplayedColumns() {
+        displayedColumnKeys = [];
+        displayedColumnTitles = [];
+
+        for (const key in columnMapping) {
+            if (key === 'Cidade') {
+                displayedColumnKeys.push('Cidade');
+                displayedColumnTitles.push(columnMapping['Cidade']);
+                displayedColumnKeys.push('DDD');
+                displayedColumnTitles.push(columnMapping['DDD']);
+                displayedColumnKeys.push('Cód. Cidade');
+                displayedColumnTitles.push(columnMapping['Cód. Cidade']);
+                displayedColumnKeys.push('EPO');
+                displayedColumnTitles.push('EPO');
+            } else if (!['DDD', 'Cód. Cidade'].includes(key)) {
+                displayedColumnKeys.push(key);
+                displayedColumnTitles.push(columnMapping[key]);
+            }
+        }
+
+        for (const key in dx22DisplayColumns) {
+            displayedColumnKeys.push(key);
+            displayedColumnTitles.push(dx22DisplayColumns[key]);
+        }
+
+        for (const key in telematicaDisplayColumn) {
+            displayedColumnKeys.push(key);
+            displayedColumnTitles.push(telematicaDisplayColumn[key]);
+        }
+
+        const tableHeaderRow = document.querySelector('#dataTable thead tr');
+        tableHeaderRow.innerHTML = '';
+        displayedColumnTitles.forEach(title => {
+            const th = document.createElement('th');
+            th.innerHTML = title;
+            tableHeaderRow.appendChild(th);
+        });
+    }
+
+    function normalizeIntervalTime(intervalString) {
+        if (!intervalString) return '';
+        const trimmed = String(intervalString).trim();
+        return trimmed.replace(/:00/g, '').replace(/^0(\d)/, '$1');
+    }
+
+    function classifyStatus(row) {
+        const codBaixa = String(row['Cód de Baixa 1'] || '').trim();
+        const motivoFechamento = String(row['Motivo de Fechamento Externo'] || '').trim();
+
+        if (codBaixa !== '') {
+            return 'Concluídas';
+        } else if (motivoFechamento !== '') {
+            return 'Baixadas fora TOA';
+        } else {
+            return 'Pendentes';
+        }
+    }
+    
+    function classifyProductivity(row) {
+        const codBaixa = parseInt(String(row['Cód de Baixa 1'] || '').trim(), 10);
+        if (!isNaN(codBaixa)) {
+            if (codBaixa >= 400 && codBaixa <= 525) {
+                return 'Produtivo';
+            }
+            return 'Improdutivo';
+        }
+        return 'N/A';
+    }
+    
+    function getEpoForRow(row) {
+        const contract = String(row['Contrato'] || '').trim();
+        const dx22Info = dx22Data.get(contract);
+        if (dx22Info && dx22Info['EPO RESPONSÁVEL']) {
+            return String(dx22Info['EPO RESPONSÁVEL']).trim();
+        }
+        const cityName = String(row['Cidade'] || '').trim().toUpperCase();
+        return epoPorCidade[cityName] || 'N/A';
+    }
+
+    function getSupervisorForRow(row) {
+        const cityName = String(row['Cidade'] || '').trim().toUpperCase();
+        const ddd = dddPorCidade[cityName] || null;
+        return supervisorPorDDD[ddd] || 'N/A';
+    }
+
+    function populateSelect(selectElement, optionsSet, keepSelection = false) {
+        const previouslySelected = keepSelection ? selectElement.value : '';
+        selectElement.innerHTML = '<option value="">Todos</option>';
+        
+        Array.from(optionsSet).sort().forEach(optionValue => {
+            if(optionValue) {
+                const option = document.createElement('option');
+                option.value = optionValue;
+                option.textContent = optionValue;
+                selectElement.appendChild(option);
+            }
+        });
+        
+        if (keepSelection && Array.from(optionsSet).includes(previouslySelected)) {
+            selectElement.value = previouslySelected;
+        } else if (!keepSelection) {
+             selectElement.value = "";
+        }
+    }
+    
+    function updateDependentFilters() {
+        if (originalData.length === 0) return;
+
+        let filteredForDropdowns = [...originalData].filter(row => requiredClasses.includes(String(row['Categorias da Capacidade'] || '').trim()));
+
+        const selectedSupervisor = supervisorFilter.value;
+        const selectedEpo = epoFilter.value;
+        const selectedCity = cityFilter.value;
+
+        if (selectedSupervisor) {
+            filteredForDropdowns = filteredForDropdowns.filter(row => getSupervisorForRow(row) === selectedSupervisor);
+        }
+        if (selectedEpo) {
+            filteredForDropdowns = filteredForDropdowns.filter(row => getEpoForRow(row) === selectedEpo);
+        }
+        if (selectedCity) {
+            filteredForDropdowns = filteredForDropdowns.filter(row => String(row['Cidade'] || '').trim() === selectedCity);
+        }
+        
+        const supervisorOptions = new Set(filteredForDropdowns.map(getSupervisorForRow));
+        const epoOptions = new Set(filteredForDropdowns.map(getEpoForRow));
+        const cityOptions = new Set(filteredForDropdowns.map(row => String(row['Cidade'] || '').trim()));
+        const techOptions = new Set(filteredForDropdowns.map(row => String(row['Recurso'] || '').trim()));
+
+        populateSelect(supervisorFilter, supervisorOptions, true);
+        populateSelect(epoFilter, epoOptions, true);
+        populateSelect(cityFilter, cityOptions, true);
+        populateSelect(technicianFilter, techOptions, true);
+    }
+    
+    function initializeAllFilters(data) {
+        statusFilter.innerHTML = `
+            <option value="">Todos</option>
+            <option value="Concluídas">Concluídas</option>
+            <option value="Pendentes">Pendentes</option>
+            <option value="Baixadas fora TOA">Baixadas fora TOA</option>
+        `;
+        
+        const validData = data.filter(row => requiredClasses.includes(String(row['Categorias da Capacidade'] || '').trim()));
+        const allSupervisors = new Set(validData.map(getSupervisorForRow));
+        const allEpos = new Set(validData.map(getEpoForRow));
+
+        populateSelect(supervisorFilter, allSupervisors);
+        populateSelect(epoFilter, allEpos);
+        populateSelect(cityFilter, new Set(validData.map(row => String(row['Cidade'] || '').trim())));
+        populateSelect(technicianFilter, new Set(validData.map(row => String(row['Recurso'] || '').trim())));
+        
+        // Popula os filtros das outras páginas
+        populateSelect(epoAnalysisSupervisorFilter, allSupervisors);
+        populateSelect(epoAnalysisEpoFilter, allEpos);
+        populatePendingSpecialsFilters(validData);
+    }
+
+    function populatePendingSpecialsFilters(data) {
+         const validData = data.filter(row => requiredClasses.includes(String(row['Categorias da Capacidade'] || '').trim()));
+         populateSelect(pendingSpecialsSupervisorFilter, new Set(validData.map(getSupervisorForRow)), true);
+         populateSelect(pendingSpecialsEpoFilter, new Set(validData.map(getEpoForRow)), true);
+    }
+
+    function sortData(data) {
+        const intervalOrder = { '8 - 12': 1, '12 - 18': 2, '8 - 22': 3 };
+
+        const getTypePriority = (row) => {
+            const contract = String(row['Contrato'] || '').trim();
+            const city = String(row['Cidade'] || '').trim();
+            const key = `${contract}-${city}`;
+
+            if (String(row['Categorias da Capacidade'] || '').trim() === streamingClass) return 1;
+            if (telematicaContracts.has(contract)) return 2;
+            if ((historicoRecorrencia.get(key) || []).length > 0) return 3;
+            if (dx22Data.has(contract)) return 4;
+            return 5;
+        };
+
+        return data.sort((a, b) => {
+            const techA = String(a['Recurso'] || '').trim().toLowerCase();
+            const techB = String(b['Recurso'] || '').trim().toLowerCase();
+            if (techA < techB) return -1;
+            if (techA > techB) return 1;
+
+            const intervalA = normalizeIntervalTime(a['Intervalo de Tempo']);
+            const intervalB = normalizeIntervalTime(b['Intervalo de Tempo']);
+            const orderA = intervalOrder[intervalA] || 99;
+            const orderB = intervalOrder[intervalB] || 99;
+            if (orderA !== orderB) return orderA - orderB;
+
+            const priorityA = getTypePriority(a);
+            const priorityB = getTypePriority(b);
+            if (priorityA !== priorityB) return priorityA - priorityB;
+            
+            const woA = String(a.numeroWO).trim();
+            const woB = String(b.numeroWO).trim();
+            if (woA < woB) return -1;
+            if (woA > woB) return 1;
+
+            return 0;
+        });
+    }
+
+    function renderTable(dataToRender) {
+        dataTableBody.innerHTML = '';
+        filteredDataOnScreen = dataToRender;
+
+        if (dataToRender.length === 0) {
+            const row = dataTableBody.insertRow();
+            const cell = row.insertCell();
+            cell.colSpan = displayedColumnTitles.length;
+            cell.className = 'no-data';
+            cell.textContent = 'Nenhum dado encontrado. Carregue um arquivo em "ROTA EXTRAIDA TOA..." ou ajuste seus filtros.';
+            updateMainScorecard([]);
+            return;
+        }
+
+        dataToRender.forEach(rowObject => {
+            const row = dataTableBody.insertRow();
+            const contract = String(rowObject['Contrato'] || '').trim();
+            const city = String(rowObject['Cidade'] || '').trim();
+            const key = `${contract}-${city}`;
+            const isStreaming = String(rowObject['Categorias da Capacidade'] || '').trim() === streamingClass;
+            const historyEntry = historicoRecorrencia.get(key) || [];
+
+            if (rowObject.classificacaoStatus === 'Baixadas fora TOA') row.classList.add('baixada-fora-toa');
+            if (historyEntry.length > 0) row.classList.add('recorrente-match');
+            if (dx22Data.has(contract)) row.classList.add('dx22-match');
+            if (telematicaContracts.has(contract)) row.classList.add('telematica-match');
+            if (isStreaming) row.classList.add('streaming-match');
+
+            displayedColumnKeys.forEach(originalColHeader => {
+                const cell = row.insertCell();
+                
+                if (originalColHeader === 'Recorr.') {
+                    cell.textContent = historyEntry.length;
+                    cell.style.textAlign = 'center';
+                } else if (originalColHeader === 'Datas Recorr.') {
+                    cell.textContent = historyEntry.join(', ');
+                } else if (originalColHeader === 'DDD') {
+                    const cityName = String(rowObject['Cidade'] || '').trim().toUpperCase();
+                    cell.textContent = dddPorCidade[cityName] || '';
+                } else if (originalColHeader === 'Cód. Cidade') {
+                    const cityName = String(rowObject['Cidade'] || '').trim().toUpperCase();
+                    cell.textContent = codigosCidadePorCidade[cityName] || '';
+                } else if (originalColHeader === 'EPO') {
+                    cell.textContent = getEpoForRow(rowObject);
+                } else if (Object.keys(dx22DisplayColumns).includes(originalColHeader)) {
+                    const dx22Info = dx22Data.get(contract);
+                    cell.textContent = dx22Info && dx22Info[originalColHeader] !== undefined ? String(dx22Info[originalColHeader]).trim() : '';
+                } else if (originalColHeader === 'TelematicaMatch') {
+                    cell.textContent = telematicaContracts.has(contract) ? '📞' : '';
+                    cell.style.textAlign = 'center';
+                } else {
+                    cell.textContent = rowObject[originalColHeader] !== undefined ? String(rowObject[originalColHeader]).trim() : '';
+                }
+            });
+        });
+        updateMainScorecard(dataToRender);
+        updateCityTechniciansCount();
+    }
+
+    function updateMainScorecard(data) {
+        let concluidas = 0;
+        let pendentes = 0;
+        let baixadasForaTOA = 0; 
+        let streaming = 0;
+        let dx22Matches = new Set();
+        let telematicaMatches = new Set();
+        let recorrenteMatches = 0;
+
+        data.forEach(row => {
+            if (row.classificacaoStatus === 'Concluídas') {
+                concluidas++;
+            } else if (row.classificacaoStatus === 'Pendentes') {
+                pendentes++;
+            } else if (row.classificacaoStatus === 'Baixadas fora TOA') {
+                baixadasForaTOA++;
+            }
+
+            if (String(row['Categorias da Capacidade'] || '').trim() === streamingClass) {
+                streaming++;
+            }
+            const contract = String(row['Contrato'] || '').trim();
+            const city = String(row['Cidade'] || '').trim();
+            const key = `${contract}-${city}`;
+            if (dx22Data.has(contract)) {
+                dx22Matches.add(contract);
+            }
+            if (telematicaContracts.has(contract)) {
+                telematicaMatches.add(contract);
+            }
+            const historyEntry = historicoRecorrencia.get(key) || [];
+            if (historyEntry.length > 0) {
+                recorrenteMatches++;
+            }
+        });
+
+        scoreConcluidas.textContent = concluidas;
+        scorePendentes.textContent = pendentes;
+        scoreBaixadasForaTOA.textContent = baixadasForaTOA;
+        scoreStreaming.textContent = streaming;
+        scoreDx22Contracts.textContent = dx22Matches.size;
+        scoreTelematicaContracts.textContent = telematicaMatches.size;
+        scoreRecorrente.textContent = recorrenteMatches;
+        scoreTotal.textContent = data.length;
+    }
+
+    function updateCityTechniciansCount() {
+        const selectedCity = cityFilter.value;
+        if (!selectedCity) {
+            scoreTecnicosCidade.style.display = 'none';
+            return;
+        }
+        
+        const techniciansInCurrentCity = new Set();
+        originalData.forEach(row => {
+            if (String(row['Cidade'] || '').trim() === selectedCity) {
+                if (row['Recurso']) {
+                    techniciansInCurrentCity.add(String(row['Recurso']).trim());
+                }
+            }
+        });
+        
+        scoreTecnicosCidade.textContent = `Técnicos: ${techniciansInCurrentCity.size}`;
+        scoreTecnicosCidade.style.display = 'inline-block';
+    }
+
+    function updateActiveFilterCount() {
+        let count = 0;
+        const filters = [
+            currentAgendaFilter, currentCustomStatusFilter, currentStreamingFilter,
+            currentDx22Filter, currentTelematicaFilter, currentRecorrenteFilter,
+            statusFilter.value, supervisorFilter.value, technicianFilter.value,
+            contractFilter.value, cityFilter.value, dddFilter.value,
+            epoFilter.value, generalSearch.value
+        ];
+        filters.forEach(filter => { if (filter) count++; });
+
+        if (count === 0) {
+            activeFilterCountDiv.textContent = "Nenhum filtro aplicado.";
+        } else {
+            activeFilterCountDiv.textContent = `${count} filtro${count > 1 ? 's' : ''} aplicado${count > 1 ? 's' : ''}.`;
+        }
+    }
+
+    function applyFilters() {
+        let filteredData = [...originalData].filter(row => 
+            requiredClasses.includes(String(row['Categorias da Capacidade'] || '').trim())
+        );
+        
+        if (supervisorFilter.value) {
+            filteredData = filteredData.filter(row => getSupervisorForRow(row) === supervisorFilter.value);
+        }
+        if (epoFilter.value) filteredData = filteredData.filter(row => getEpoForRow(row) === epoFilter.value);
+        if (cityFilter.value) filteredData = filteredData.filter(row => String(row['Cidade'] || '').trim() === cityFilter.value);
+        if (technicianFilter.value) filteredData = filteredData.filter(row => String(row['Recurso'] || '').trim() === technicianFilter.value);
+
+        if (dddFilter.value) {
+            const dddsToFilter = dddFilter.value.split(',').map(d => d.trim()).filter(d => d);
+            if(dddsToFilter.length > 0) {
+                filteredData = filteredData.filter(row => dddsToFilter.includes(dddPorCidade[String(row['Cidade'] || '').trim().toUpperCase()]));
+            }
+        }
+
+        if (currentAgendaFilter === 'hot') filteredData = filteredData.filter(row => hotAgendaIntervals.includes(normalizeIntervalTime(row['Intervalo de Tempo'])));
+        else if (currentAgendaFilter === 'cold') filteredData = filteredData.filter(row => coldAgendaIntervals.includes(normalizeIntervalTime(row['Intervalo de Tempo'])));
+        if (statusFilter.value) filteredData = filteredData.filter(row => row.classificacaoStatus === statusFilter.value);
+        if (currentCustomStatusFilter === 'baixadaForaToa') filteredData = filteredData.filter(row => row.classificacaoStatus === 'Baixadas fora TOA');
+        if (currentStreamingFilter) filteredData = filteredData.filter(row => String(row['Categorias da Capacidade'] || '').trim() === streamingClass);
+        if (currentDx22Filter) filteredData = filteredData.filter(row => dx22Data.has(String(row['Contrato'] || '').trim()));
+        if (currentTelematicaFilter) filteredData = filteredData.filter(row => telematicaContracts.has(String(row['Contrato'] || '').trim()));
+        if (currentRecorrenteFilter) {
+            filteredData = filteredData.filter(row => {
+                const key = `${String(row['Contrato'] || '').trim()}-${String(row['Cidade'] || '').trim()}`;
+                return (historicoRecorrencia.get(key) || []).length > 0;
+            });
+        }
+        if (contractFilter.value) filteredData = filteredData.filter(row => String(row['Contrato'] || '').toLowerCase().includes(contractFilter.value.toLowerCase().trim()));
+        if (generalSearch.value) {
+            const searchTerm = generalSearch.value.toLowerCase().trim();
+            filteredData = filteredData.filter(row => {
+                const searchableValues = [
+                    row['Endereço'], row['Cidade'], row['Intervalo de Tempo'], row['Contrato'], 
+                    row['Tipo de Atividade'], row['Número da WO'], row['Bairro'], row['Motivo de Fechamento Externo'], 
+                    row['Recurso'], row['Login do Técnico'], getEpoForRow(row),
+                    dddPorCidade[String(row['Cidade'] || '').trim().toUpperCase()],
+                    codigosCidadePorCidade[String(row['Cidade'] || '').trim().toUpperCase()],
+                    String(row['Categorias da Capacidade'] || '').trim()
+                ];
+                return searchableValues.some(val => val && String(val).toLowerCase().includes(searchTerm));
+            });
+        }
+        
+        const sortedData = sortData(filteredData);
+        renderTable(sortedData);
+        updateActiveFilterCount();
+        updateActiveFiltersDisplay();
+        renderEpoAnalysis();
+        renderTelXToaAnalysis();
+        renderPendingSpecials();
+    }
+    
+    function readExcelFile(file, fileType) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            
+            const fileInputId = `${fileType}`; // e.g., 'excelFiles', 'historyFile'
+            const loadingIndicator = document.getElementById(`${fileInputId}Loading`);
+            const timestampDisplay = document.getElementById(`${fileInputId}Timestamp`);
+
+            if (loadingIndicator) loadingIndicator.style.display = 'inline-block'; // Show spinner
+            if (timestampDisplay) timestampDisplay.textContent = ''; // Clear previous timestamp
+
+            reader.onload = (e) => {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { raw: false, header: 1 });
+
+                    if (jsonData.length < 1) { 
+                        resolve(fileType === 'excelFiles' || fileType === 'historyFile' ? [] : null);
+                        return;
+                    }
+
+                    if (fileType === 'excelFiles' || fileType === 'historyFile') {
+                        const headerRow = jsonData.find(row => row.some(cell => String(cell).trim() === 'Recurso'));
+                        if(!headerRow) {
+                            console.warn(`Cabeçalho com 'Recurso' não encontrado no arquivo: ${file.name}`);
+                            resolve([]);
+                            return;
+                        }
+
+                        const headerIndex = jsonData.indexOf(headerRow);
+                        const header = headerRow.map(h => String(h).trim());
+                        const dataRows = jsonData.slice(headerIndex + 1);
+                        const headerMap = {};
+                        header.forEach((h, i) => headerMap[h] = i);
+                        
+                        const processedData = dataRows.map(rowArray => {
+                            const newRow = {};
+                            for (const key in headerMap) { newRow[key] = rowArray[headerMap[key]]; }
+                            if(fileType === 'excelFiles') {
+                                newRow.classificacaoStatus = classifyStatus(newRow);
+                                newRow.numeroWO = String(newRow['Número da WO'] || '').trim();
+                            }
+                            return newRow;
+                        }).filter(row => (fileType === 'excelFiles' ? row.numeroWO : row['Contrato']));
+                        
+                        resolve(processedData);
+
+                    } else { 
+                        const header = jsonData[0].map(h => String(h).trim());
+                        const dataRows = jsonData.slice(1);
+                        const jsonDataObjects = dataRows.map(rowArray => {
+                            const obj = {};
+                            header.forEach((h, i) => obj[h] = rowArray[i]);
+                            return obj;
+                        });
+                        
+                        let processedData;
+                        if (fileType === 'dx22File') {
+                            processedData = new Map();
+                            jsonDataObjects.forEach(row => {
+                                let contratoDx22 = String(row['CONTRATO'] || '').trim();
+                                if (contratoDx22.match(/^\d{3}\//)) {
+                                    contratoDx22 = contratoDx22.substring(contratoDx22.indexOf('/') + 1);
+                                }
+                                if (contratoDx22) {
+                                    const dx22Row = {};
+                                    for (const originalCol in dx22DisplayColumns) {
+                                        dx22Row[originalCol] = row[originalCol] !== undefined ? String(row[originalCol]).trim() : '';
+                                    }
+                                    processedData.set(contratoDx22, dx22Row);
+                                }
+                            });
+                        } else if (fileType === 'telematicaFile') {
+                            processedData = new Map();
+                            jsonDataObjects.forEach(row => {
+                                const grupo = String(row['Grupo'] || '').trim();
+                                if (grupo === 'Grupo SP Interior') {
+                                    const contratoTelematica = String(row['NR_CONTRATO'] || '').trim();
+                                    const cidadeTelematica = String(row['CIDADE'] || '').trim();
+                                    if (contratoTelematica) {
+                                        processedData.set(contratoTelematica, { city: cidadeTelematica });
+                                    }
+                                }
+                            });
+                        }
+                        resolve(processedData);
+                    }
+                } catch (error) {
+                    console.error(`Erro ao ler o arquivo Excel (${fileInputId}):`, file.name, error);
+                    reject(error);
+                } finally {
+                    if (loadingIndicator) loadingIndicator.style.display = 'none'; // Hide spinner
+                    const endTime = new Date();
+                    fileUploadTimestamps[fileInputId] = endTime.toLocaleString(); // Store formatted time
+                    if (timestampDisplay) timestampDisplay.textContent = `Última carga: ${fileUploadTimestamps[fileInputId]}`;
+                    saveData('fileUploadTimestamps', fileUploadTimestamps); // Persist timestamps
+                }
+            };
+            reader.onerror = (error) => {
+                if (loadingIndicator) loadingIndicator.style.display = 'none';
+                reject(error);
+            };
+            reader.readAsArrayBuffer(file);
+        });
+    }
+
+    excelFilesInput.addEventListener('change', async (event) => {
+        const files = event.target.files;
+        if (files.length === 0) return;
+
+        document.getElementById('loading').style.display = 'block';
+        try {
+            const allPromises = Array.from(files).map(file => readExcelFile(file, 'excelFiles')); /* Pass 'excelFiles' as type */
+            const newFilesDataArrays = await Promise.all(allPromises);
+            
+            const newlyReadData = [].concat(...newFilesDataArrays);
+
+            if (newlyReadData.length > 0) {
+                const uniqueDataMap = new Map(originalData.map(row => [row.numeroWO, row]));
+                newlyReadData.forEach(row => {
+                    if (row.numeroWO) {
+                        uniqueDataMap.set(row.numeroWO, row);
+                    }
+                });
+                originalData = Array.from(uniqueDataMap.values());
+                
+                await saveData('rotas', originalData);
+                initializeAllFilters(originalData);
+                applyFilters();
+                alert(`${originalData.length} visitas únicas carregadas para análise.`);
+            } else {
+                alert("Nenhuma visita válida encontrada nos arquivos selecionados.");
+                applyFilters();
+            }
+
+        } catch (error) {
+             console.error("Falha ao carregar arquivos de rota:", error);
+             alert("Ocorreu um erro ao carregar os arquivos de rota.");
+        } finally {
+            document.getElementById('loading').style.display = 'none';
+            excelFilesInput.value = '';
+        }
+    });
+
+    historyFileInput.addEventListener('change', async (event) => {
+        const files = event.target.files;
+        if (files.length === 0) return;
+
+        document.getElementById('loading').style.display = 'block';
+        let processedFileCount = 0;
+        let newEntriesCount = 0;
+
+        try {
+            const newFilesToProcess = [];
+            const newSignatures = new Set();
+            const ignoredFiles = [];
+
+            for (const file of files) {
+                const signature = `${file.name}-${file.size}-${file.lastModified}`;
+                if (!processedHistoryFileSignatures.has(signature)) {
+                    newFilesToProcess.push(file);
+                    newSignatures.add(signature);
+                } else {
+                    ignoredFiles.push(file.name);
+                }
+            }
+
+            if (ignoredFiles.length > 0) {
+                alert(`Os seguintes arquivos de histórico foram ignorados por já terem sido processados:\n\n- ${ignoredFiles.join('\n- ')}`);
+            }
+
+            if (newFilesToProcess.length === 0) {
+                document.getElementById('loading').style.display = 'none';
+                return;
+            }
+            
+            const allPromises = newFilesToProcess.map(file => readExcelFile(file, 'historyFile')); /* Pass 'historyFile' as type */
+            const historyFileResults = await Promise.all(allPromises);
+
+            historyFileResults.forEach(fileData => {
+                if (fileData && fileData.length > 0) {
+                    processedFileCount++;
+                    fileData.forEach(row => {
+                        const contrato = String(row['Contrato'] || '').trim();
+                        const cidade = String(row['Cidade'] || '').trim();
+                        const dataVisita = String(row['Data'] || '').trim();
+
+                        if (contrato && cidade && dataVisita) {
+                            const key = `${contrato}-${cidade}`;
+                            const dates = historicoRecorrencia.get(key) || [];
+                            if (!dates.includes(dataVisita)) {
+                                dates.push(dataVisita);
+                                historicoRecorrencia.set(key, dates.sort());
+                                newEntriesCount++;
+                            }
+                        }
+                    });
+                }
+            });
+
+            if (processedFileCount > 0) {
+                await saveData('historicoRecorrencia', historicoRecorrencia);
+                newSignatures.forEach(sig => processedHistoryFileSignatures.add(sig));
+                await saveData('historyFileSignatures', processedHistoryFileSignatures);
+                
+                applyFilters(); 
+                alert(`${processedFileCount} arquivos de histórico processados.\n${newEntriesCount} novas entradas de recorrência adicionadas.`);
+            } else {
+                alert("Nenhum arquivo de histórico válido foi encontrado para processar.");
+            }
+
+        } catch (error) {
+             console.error("Falha ao carregar arquivos de histórico:", error);
+             alert("Ocorreu um erro ao carregar os arquivos de histórico.");
+        } finally {
+            document.getElementById('loading').style.display = 'none';
+            historyFileInput.value = '';
+        }
+    });
+
+    dx22FileInput.addEventListener('change', async (event) => {
+        const files = event.target.files;
+        if (files.length === 0) return;
+
+        document.getElementById('loading').style.display = 'block';
+        try {
+            const allPromises = Array.from(files).map(file => readExcelFile(file, 'dx22File')); /* Pass 'dx22File' as type */
+            const newDx22Maps = await Promise.all(allPromises);
+
+            newDx22Maps.forEach(newMap => {
+                if(newMap) newMap.forEach((value, key) => { dx22Data.set(key, value); });
+            });
+
+            await saveData('dx22', dx22Data);
+            
+            applyFilters();
+            alert(`${dx22Data.size} contratos DX22 carregados e salvos.`);
+        
+        } catch (error) {
+            alert("Ocorreu um erro ao carregar um ou mais arquivos DX22.");
+            applyFilters(); 
+        } finally {
+            document.getElementById('loading').style.display = 'none';
+            dx22FileInput.value = '';
+        }
+    });
+
+    clearDx22Btn.addEventListener('click', async () => {
+        if (confirm('Tem certeza que deseja limpar os dados da planilha DX22?')) {
+            try {
+                await clearData('dx22');
+                dx22Data = new Map();
+                dx22FileInput.value = '';
+                document.getElementById('dx22FileTimestamp').textContent = ''; /* Clear timestamp */
+                applyFilters();
+                alert('Dados DX22 limpos com sucesso!');
+            } catch(e) {
+                console.error("Erro ao limpar dados DX22:", e);
+                alert("Erro ao limpar dados DX22.");
+            }
+        }
+    });
+
+    telematicaFileInput.addEventListener('change', async (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        document.getElementById('loading').style.display = 'block';
+        try {
+            telematicaContracts = await readExcelFile(file, 'telematicaFile'); /* Pass 'telematicaFile' as type */
+            await saveData('telematica', telematicaContracts);
+            applyFilters();
+            alert(`Planilha Telemática carregada! ${telematicaContracts.size} contratos do 'Grupo SP Interior' foram salvos.`);
+        } catch (error) {
+            alert("Ocorreu um erro ao carregar o arquivo Telemática.");
+            telematicaContracts = new Map();
+            await clearData('telematica');
+            applyFilters();
+        } finally {
+            document.getElementById('loading').style.display = 'none';
+            telematicaFileInput.value = '';
+        }
+    });
+
+    clearTelematicaBtn.addEventListener('click', async () => {
+        if (confirm('Tem certeza que deseja limpar os dados da planilha Telemática?')) {
+            try {
+                await clearData('telematica');
+                telematicaContracts = new Map();
+                telematicaFileInput.value = '';
+                document.getElementById('telematicaFileTimestamp').textContent = ''; /* Clear timestamp */
+                applyFilters();
+                alert('Dados Telemática limpos com sucesso!');
+            } catch(e) {
+                console.error("Erro ao limpar dados da Telemática:", e);
+                alert("Erro ao limpar dados da Telemática.");
+            }
+        }
+    });
+    
+    function updateAllFilterButtons() {
+        hotAgendaBtn.classList.toggle('active', currentAgendaFilter === 'hot');
+        coldAgendaBtn.classList.toggle('active', currentAgendaFilter === 'cold');
+        baixadaForaToaBtn.classList.toggle('active', currentCustomStatusFilter === 'baixadaForaToa');
+        streamingBtn.classList.toggle('active', currentStreamingFilter);
+        filterDx22Btn.classList.toggle('active', currentDx22Filter);
+        filterTelematicaBtn.classList.toggle('active', currentTelematicaFilter);
+        filterRecorrenteBtn.classList.toggle('active', currentRecorrenteFilter);
+    }
+    
+    hotAgendaBtn.addEventListener('click', () => { currentAgendaFilter = currentAgendaFilter === 'hot' ? '' : 'hot'; applyFilters(); });
+    coldAgendaBtn.addEventListener('click', () => { currentAgendaFilter = currentAgendaFilter === 'cold' ? '' : 'cold'; applyFilters(); });
+    clearAgendaFilterBtn.addEventListener('click', () => { currentAgendaFilter = ''; applyFilters(); });
+    baixadaForaToaBtn.addEventListener('click', () => { currentCustomStatusFilter = currentCustomStatusFilter === 'baixadaForaToa' ? '' : 'baixadaForaToa'; applyFilters(); });
+    streamingBtn.addEventListener('click', () => { currentStreamingFilter = !currentStreamingFilter; applyFilters(); });
+    filterRecorrenteBtn.addEventListener('click', () => { currentRecorrenteFilter = !currentRecorrenteFilter; applyFilters(); });
+
+    filterDx22Btn.addEventListener('click', () => {
+        if (dx22Data.size === 0 && !currentDx22Filter) {
+            alert('Por favor, carregue la planilha DX22 primeiro para usar este filtro.');
+            return;
+        }
+        currentDx22Filter = !currentDx22Filter;
+        applyFilters();
+    });
+
+    filterTelematicaBtn.addEventListener('click', () => {
+        if (telematicaContracts.size === 0 && !currentTelematicaFilter) {
+            alert('Por favor, carregue la planilha Telemática primeiro para usar este filtro.');
+            return;
+        }
+        currentTelematicaFilter = !currentTelematicaFilter;
+        applyFilters();
+    });
+    
+    clearAllDataBtn.addEventListener('click', async () => {
+        if (confirm('Você tem certeza que deseja apagar as ROTAS ATUAIS da tela? Isso não afeta o histórico salvo.')) {
+            try {
+                await clearData('rotas');
+                originalData = [];
+                excelFilesInput.value = '';
+                document.getElementById('excelFilesTimestamp').textContent = ''; /* Clear timestamp */
+                applyFilters();
+                alert('As rotas atuais foram limpas!');
+            } catch (e) {
+                console.error("Erro ao limpar rotas:", e);
+                alert("Ocorreu um erro ao limpar as rotas atuais.");
+            }
+        }
+    });
+
+    clearHistoryBtn.addEventListener('click', async () => {
+        if (confirm('ATENÇÃO!\n\nIsso apagará TODO O HISTÓRICO DE RECORRÊNCIA salvo. Deseja continuar?')) {
+            try {
+                await Promise.all([
+                    clearData('historicoRecorrencia'),
+                    clearData('historyFileSignatures')
+                ]);
+                historicoRecorrencia = new Map();
+                processedHistoryFileSignatures = new Set();
+                historyFileInput.value = '';
+                document.getElementById('historyFileTimestamp').textContent = ''; /* Clear timestamp */
+                applyFilters(); 
+                alert('Histórico de recorrência limpo com sucesso!');
+            } catch (e) {
+                 console.error("Erro ao limpar o histórico:", e);
+                alert("Ocorreu um erro ao limpar o histórico.");
+            }
+        }
+    });
+    
+    function handleFilterChange() {
+        applyFilters();
+        updateDependentFilters();
+    }
+    
+    [epoFilter, cityFilter, technicianFilter, supervisorFilter, statusFilter].forEach(el => el.addEventListener('change', handleFilterChange));
+    [contractFilter, generalSearch, dddFilter].forEach(el => el.addEventListener('keyup', handleFilterChange));
+
+    darkModeToggle.addEventListener('click', async () => {
+        document.body.classList.toggle('dark-mode');
+        const isDarkMode = document.body.classList.contains('dark-mode');
+        try {
+            await saveData('darkMode', isDarkMode);
+        } catch(e) {
+            console.error("Não foi possível salvar a preferência de tema.", e);
+        }
+        darkModeToggle.querySelector('i').className = isDarkMode ? 'fas fa-sun' : 'fas fa-moon';
+        darkModeToggle.lastChild.textContent = isDarkMode ? ' Light Mode' : ' Dark Mode';
+    });
+
+    homeButton.addEventListener('click', () => {
+        mainContentContainer.style.display = 'block';
+        epoAnalysisContainer.style.display = 'none';
+        telXToaContainer.style.display = 'none';
+        pendingSpecialsContainer.style.display = 'none';
+    });
+
+    epoAnalysisBtn.addEventListener('click', () => {
+        mainContentContainer.style.display = 'none';
+        epoAnalysisContainer.style.display = 'block';
+        telXToaContainer.style.display = 'none';
+        pendingSpecialsContainer.style.display = 'none';
+        renderEpoAnalysis();
+    });
+
+    telXToaBtn.addEventListener('click', () => {
+        mainContentContainer.style.display = 'none';
+        epoAnalysisContainer.style.display = 'none';
+        telXToaContainer.style.display = 'block';
+        pendingSpecialsContainer.style.display = 'none';
+        renderTelXToaAnalysis();
+    });
+
+    pendingSpecialsBtn.addEventListener('click', () => {
+        mainContentContainer.style.display = 'none';
+        epoAnalysisContainer.style.display = 'none';
+        telXToaContainer.style.display = 'none';
+        pendingSpecialsContainer.style.display = 'block';
+        renderPendingSpecials();
+    });
+    
+    function calculatePercentage(numerator, denominator) {
+        if (denominator === 0) return '0.0%';
+        return ((numerator / denominator) * 100).toFixed(1) + '%';
+    }
+
+    function getGroupedStats(data, groupBy) {
+        const stats = {};
+        const getStatObject = () => ({
+            total: 0, concluidas: 0, pendentes: 0, baixadas: 0,
+            prod: 0, improd: 0,
+            stream: 0, streamProd: 0, streamImprod: 0, streamPend: 0,
+            tele: 0, teleProd: 0, teleImprod: 0, telePend: 0
+        });
+
+        data.forEach(row => {
+            const key = groupBy === 'city' ? String(row['Cidade'] || 'N/A').trim() : getEpoForRow(row);
+            if (!stats[key]) stats[key] = getStatObject();
+            
+            const s = stats[key];
+            s.total++;
+            
+            const isStreaming = String(row['Categorias da Capacidade'] || '').trim() === streamingClass;
+            const isTelematica = telematicaContracts.has(String(row['Contrato'] || '').trim());
+            if(isStreaming) s.stream++;
+            if(isTelematica) s.tele++;
+
+            if (row.classificacaoStatus === 'Concluídas') {
+                s.concluidas++;
+                const prodStatus = classifyProductivity(row);
+                if (prodStatus === 'Produtivo') {
+                    s.prod++;
+                    if(isStreaming) s.streamProd++;
+                    if(isTelematica) s.teleProd++;
+                } else if (prodStatus === 'Improdutivo') {
+                    s.improd++;
+                    if(isStreaming) s.streamImprod++;
+                    if(isTelematica) s.teleImprod++;
+                }
+            } else if (row.classificacaoStatus === 'Pendentes') {
+                s.pendentes++;
+                if(isStreaming) s.streamPend++;
+                if(isTelematica) s.telePend++;
+            } else if (row.classificacaoStatus === 'Baixadas fora TOA') {
+                s.baixadas++;
+            }
+        });
+        return stats;
+    }
+
+    function renderEpoAnalysis() {
+        epoAnalysisTableBody.innerHTML = '';
+        let validData = originalData.filter(row => requiredClasses.includes(String(row['Categorias da Capacidade'] || '').trim()));
+
+        const selectedSupervisor = epoAnalysisSupervisorFilter.value;
+        if (selectedSupervisor) validData = validData.filter(row => getSupervisorForRow(row) === selectedSupervisor);
+        
+        const epoOptionsForSupervisor = new Set(validData.map(getEpoForRow));
+        populateSelect(epoAnalysisEpoFilter, epoOptionsForSupervisor, true);
+
+        const selectedEpo = epoAnalysisEpoFilter.value;
+        if (selectedEpo) validData = validData.filter(row => getEpoForRow(row) === selectedEpo);
+        
+        if (validData.length === 0) {
+            const row = epoAnalysisTableBody.insertRow();
+            const cell = row.insertCell();
+            cell.colSpan = 20;
+            cell.className = 'no-data';
+            cell.textContent = 'Nenhum dado encontrado para os filtros aplicados.';
+            return;
+        }
+
+        const epoStats = getGroupedStats(validData, 'epo');
+        const sortedEpoNames = Object.keys(epoStats).sort();
+        
+        sortedEpoNames.forEach(epoName => {
+            const s = epoStats[epoName];
+            const row = epoAnalysisTableBody.insertRow();
+            row.classList.add('epo-main-row');
+            row.dataset.epoName = epoName;
+            row.innerHTML = `
+                <td class="epo-name" data-entity-name="${epoName}" data-entity-type="epo">${epoName} <i class="fas fa-caret-right"></i></td>
+                <td>${s.total}</td> <td>${s.concluidas}</td> <td>${s.pendentes}</td> <td>${s.baixadas}</td>
+                <td>${calculatePercentage(s.prod, s.concluidas)}</td> <td>${calculatePercentage(s.improd, s.concluidas)}</td> <td>${calculatePercentage(s.pendentes, s.total)}</td>
+                <td>${s.stream}</td> <td>${s.streamProd}</td> <td>${calculatePercentage(s.streamProd, s.stream)}</td> <td>${s.streamImprod}</td> <td>${calculatePercentage(s.streamImprod, s.stream)}</td> <td>${s.streamPend}</td>
+                <td>${s.tele}</td> <td>${s.teleProd}</td> <td>${calculatePercentage(s.teleProd, s.tele)}</td> <td>${s.teleImprod}</td> <td>${calculatePercentage(s.teleImprod, s.tele)}</td> <td>${s.telePend}</td>
+            `.replace(/<td>/g, '<td style="text-align:center;">');
+            row.cells[0].style.textAlign = 'left';
+            row.querySelector('.epo-name').addEventListener('click', toggleEpoDetails);
+        });
+    }
+
+    epoAnalysisSupervisorFilter.addEventListener('change', renderEpoAnalysis);
+    epoAnalysisEpoFilter.addEventListener('change', renderEpoAnalysis);
+
+    function toggleEpoDetails(event) {
+        const epoName = event.currentTarget.dataset.entityName;
+        const parentRow = event.currentTarget.parentElement;
+        const epoId = epoName.replace(/[^a-zA-Z0-9]/g, '');
+        const existingDetails = document.getElementById(`details-for-${epoId}`);
+
+        if (existingDetails) {
+            existingDetails.remove();
+            parentRow.querySelector('.epo-name i').classList.replace('fa-caret-down', 'fa-caret-right');
+            return;
+        }
+        
+        parentRow.querySelector('.epo-name i').classList.replace('fa-caret-right', 'fa-caret-down');
+
+        const epoData = originalData.filter(row => getEpoForRow(row) === epoName);
+        const cityStats = getGroupedStats(epoData, 'city');
+        
+        const sortedCities = Object.keys(cityStats).sort();
+        
+        const detailsContainer = document.createElement('tr');
+        detailsContainer.id = `details-for-${epoId}`;
+        const detailsCell = document.createElement('td');
+        detailsCell.colSpan = 20; 
+        detailsCell.style.padding = '0';
+        
+        const subTable = document.createElement('table');
+        subTable.style.width = '100%';
+        subTable.style.marginTop = '0';
+        subTable.innerHTML = `<tbody></tbody>`;
+        
+        const subTbody = subTable.querySelector('tbody');
+        sortedCities.forEach(cityName => {
+            const s = cityStats[cityName];
+            const cityRow = subTbody.insertRow();
+            cityRow.classList.add('city-detail-row');
+            cityRow.innerHTML = `
+                <td class="city-name" data-entity-name="${cityName}" data-entity-type="city" data-epo-parent="${epoName}">${cityName}</td>
+                <td>${s.total}</td> <td>${s.concluidas}</td> <td>${s.pendentes}</td> <td>${s.baixadas}</td>
+                <td>${calculatePercentage(s.prod, s.concluidas)}</td> <td>${calculatePercentage(s.improd, s.concluidas)}</td> <td>${calculatePercentage(s.pendentes, s.total)}</td>
+                <td>${s.stream}</td> <td>${s.streamProd}</td> <td>${calculatePercentage(s.streamProd, s.stream)}</td> <td>${s.streamImprod}</td> <td>${calculatePercentage(s.streamImprod, s.stream)}</td> <td>${s.streamPend}</td>
+                <td>${s.tele}</td> <td>${s.teleProd}</td> <td>${calculatePercentage(s.teleProd, s.tele)}</td> <td>${s.teleImprod}</td> <td>${calculatePercentage(s.teleImprod, s.tele)}</td> <td>${s.telePend}</td>
+            `.replace(/<td>/g, '<td style="text-align:center;">');
+            cityRow.cells[0].style.textAlign = 'left';
+            cityRow.cells[0].style.paddingLeft = '20px';
+        });
+
+        detailsCell.appendChild(subTable);
+        detailsContainer.appendChild(detailsCell);
+        parentRow.after(detailsContainer);
+    }
+    
+    function renderTelXToaAnalysis() {
+        telXToaTableBody.innerHTML = '';
+        if(telematicaContracts.size === 0 || originalData.length === 0) {
+            const row = telXToaTableBody.insertRow();
+            const cell = row.insertCell();
+            cell.colSpan = 3;
+            cell.className = 'no-data';
+            cell.textContent = 'Carregue as planilhas "ROTA EXTRAIDA TOA" e "Telematicas" para fazer a comparação.';
+            populateSelect(telXToaCityFilter, new Set());
+            return;
+        }
+        
+        const toaContracts = new Set(originalData.map(row => String(row['Contrato'] || '').trim()));
+        let missingContracts = [];
+
+        telematicaContracts.forEach((telInfo, telContract) => {
+            if(!toaContracts.has(telContract)) {
+                const dx22Info = dx22Data.get(telContract);
+                const cityDX22 = dx22Info ? (dx22Info['CIDADE DE RETIRADA'] || 'N/A') : 'N/A';
+                missingContracts.push({ 
+                    contract: telContract, 
+                    cityTel: telInfo.city,
+                    cityDX22: cityDX22
+                });
+            }
+        });
+        
+        const uniqueCities = new Set(missingContracts.map(item => item.cityTel));
+        populateSelect(telXToaCityFilter, uniqueCities, true);
+
+        const contractFilterValue = telXToaContractFilter.value.toLowerCase().trim();
+        const cityFilterValue = telXToaCityFilter.value;
+
+        if (contractFilterValue) {
+            missingContracts = missingContracts.filter(item => item.contract.toLowerCase().includes(contractFilterValue));
+        }
+        if (cityFilterValue) {
+            missingContracts = missingContracts.filter(item => item.cityTel === cityFilterValue);
+        }
+
+        if(missingContracts.length === 0) {
+            const row = telXToaTableBody.insertRow();
+            const cell = row.insertCell();
+            cell.colSpan = 3;
+            cell.className = 'no-data';
+            cell.textContent = 'Nenhum contrato da Telemática está fora das rotas do dia, ou os filtros não retornaram resultados.';
+            return;
+        }
+
+        missingContracts.sort((a,b) => a.contract.localeCompare(b.contract)).forEach(item => {
+            const row = telXToaTableBody.insertRow();
+            row.innerHTML = `<td>${item.contract}</td><td>${item.cityTel}</td><td>${item.cityDX22}</td>`;
+        });
+    }
+
+    async function exportPendingSpecialsToExcel() {
+        const content = document.getElementById('pendingSpecialsContent');
+        if (!content.hasChildNodes() || content.querySelector('.no-data')) {
+            alert("Não há dados de pendentes especiais para exportar.");
+            return;
+        }
+
+        const dataToExport = [];
+        let currentSupervisor = '', currentEpo = '', currentCity = '';
+
+        content.querySelectorAll('h2, h3, h4, .pendentes-container').forEach(el => {
+            if (el.tagName === 'H2') {
+                currentSupervisor = el.textContent.replace('Supervisor: ', '').trim();
+            } else if (el.tagName === 'H3') {
+                currentEpo = el.textContent.replace('EPO: ', '').trim();
+            } else if (el.tagName === 'H4') {
+                currentCity = el.textContent.replace('Cidade: ', '').trim();
+            } else if (el.classList.contains('pendentes-container')) {
+                const types = el.querySelectorAll('div > h5');
+                types.forEach(typeEl => {
+                    const type = typeEl.textContent.trim();
+                    const parentDiv = typeEl.parentElement;
+                    const windows = parentDiv.querySelectorAll('h6');
+                    windows.forEach(windowEl => {
+                        const window = windowEl.textContent.trim();
+                        let list = windowEl.nextElementSibling;
+                        if (list && list.tagName === 'UL') {
+                            list.querySelectorAll('li').forEach(li => {
+                                if (li.textContent !== 'Nenhum') {
+                                    const contractTechnician = li.textContent.trim();
+                                    const parts = contractTechnician.split(' - ');
+                                    const contract = parts[0] || ''; // Extract contract
+                                    
+                                    dataToExport.push({
+                                        Supervisor: currentSupervisor,
+                                        EPO: currentEpo,
+                                        Cidade: currentCity,
+                                        Tipo: type,
+                                        Janela: window,
+                                        Contrato: contract // Only include the "Contrato" column
+                                    });
+                                }
+                            });
+                        }
+                    });
+                });
+            }
+        });
+
+        if (dataToExport.length === 0) {
+            alert("Nenhum item pendente especial encontrado para exportar.");
+            return;
+        }
+
+        try {
+            const workbook = new ExcelJS.Workbook();
+            const worksheet = workbook.addWorksheet('Pendentes Especiais');
+
+            // Define headers, now WITHOUT 'Contrato - Técnico'
+            const headers = ['Supervisor', 'EPO', 'Cidade', 'Tipo', 'Janela', 'Contrato'];
+            worksheet.columns = headers.map(h => ({ header: h, key: h.replace(/\s|-/g, ''), width: 25 }));
+            
+            const headerRow = worksheet.getRow(1);
+            headerRow.eachCell(cell => {
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFC82333' } };
+                cell.font = { color: { argb: 'FFFFFFFF' }, bold: true };
+            });
+
+            // Add data
+            worksheet.addRows(dataToExport);
+
+            // Generate and download file
+            const date = new Date();
+            const timestamp = `${date.getFullYear()}${(date.getMonth() + 1).toString().padStart(2, '0')}${date.getDate().toString().padStart(2, '0')}_${date.getHours().toString().padStart(2, '0')}${date.getMinutes().toString().padStart(2, '0')}`;
+            const fileName = `Pendentes_Especiais_${timestamp}.xlsx`;
+            
+            const buffer = await workbook.xlsx.writeBuffer();
+            const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } catch (error) {
+            console.error("Erro ao exportar Pendentes Especiais:", error);
+            alert("Ocorreu um erro ao exportar os dados.");
+        }
+    }
+
+
+    function renderPendingSpecials() {
+        let pendingData = originalData.filter(row => row.classificacaoStatus === 'Pendentes');
+
+        const selectedSupervisor = pendingSpecialsSupervisorFilter.value;
+        const selectedEpo = pendingSpecialsEpoFilter.value;
+
+        if (selectedSupervisor) {
+            pendingData = pendingData.filter(row => getSupervisorForRow(row) === selectedSupervisor);
+        }
+
+        const epoOptionsForSupervisor = new Set(pendingData.map(getEpoForRow));
+        populateSelect(pendingSpecialsEpoFilter, epoOptionsForSupervisor, true);
+
+        if (selectedEpo) {
+            pendingData = pendingData.filter(row => getEpoForRow(row) === selectedEpo);
+        }
+        
+        const groups = {}; // Supervisor -> EPO -> Cidade -> { streaming812: [], ... }
+
+        pendingData.forEach(row => {
+            const contract = String(row['Contrato'] || '').trim();
+            const technician = String(row['Recurso'] || 'N/A').trim();
+            const interval = normalizeIntervalTime(row['Intervalo de Tempo']);
+            const isStreaming = String(row['Categorias da Capacidade'] || '').trim() === streamingClass;
+            const isTelematica = telematicaContracts.has(contract);
+
+            if (!isStreaming && !isTelematica) return;
+
+            const supervisor = getSupervisorForRow(row);
+            const epo = getEpoForRow(row);
+            const city = String(row['Cidade'] || 'N/A').trim();
+
+            if (!groups[supervisor]) groups[supervisor] = {};
+            if (!groups[supervisor][epo]) groups[supervisor][epo] = {};
+            if (!groups[supervisor][epo][city]) {
+                groups[supervisor][epo][city] = { s8: [], s12: [], t8: [], t12: [] };
+            }
+
+            const entry = `${contract} - ${technician}`;
+            if (isStreaming && interval === '8 - 12') groups[supervisor][epo][city].s8.push(entry);
+            else if (isStreaming && interval === '12 - 18') groups[supervisor][epo][city].s12.push(entry);
+            else if (isTelematica && interval === '8 - 12') groups[supervisor][epo][city].t8.push(entry);
+            else if (isTelematica && interval === '12 - 18') groups[supervisor][epo][city].t12.push(entry);
+        });
+
+        let html = '';
+        const sortedSupervisors = Object.keys(groups).sort();
+
+        if (sortedSupervisors.length === 0) {
+            pendingSpecialsContent.innerHTML = '<p class="no-data">Nenhum pendente especial encontrado com os filtros aplicados.</p>';
+            return;
+        }
+
+        sortedSupervisors.forEach(supervisor => {
+            html += `<h2 style="border-bottom: 2px solid; padding-bottom: 5px; margin-top: 20px;">Supervisor: ${supervisor}</h2>`;
+            const sortedEpos = Object.keys(groups[supervisor]).sort();
+            
+            sortedEpos.forEach(epo => {
+                html += `<h3 style="margin-left: 20px;">EPO: ${epo}</h3>`;
+                const sortedCities = Object.keys(groups[supervisor][epo]).sort();
+
+                sortedCities.forEach(city => {
+                    html += `<h4 style="margin-left: 40px;">Cidade: ${city}</h4>`;
+                    const cityData = groups[supervisor][epo][city];
+                    
+                    html += `<div class="pendentes-container" style="margin-left: 40px;">`;
+                    // Streaming
+                    html += `<div><h5><i class="fas fa-video"></i> Streaming Pendentes</h5>`;
+                    html += `<h6><i class="far fa-clock"></i> Janela 8-12</h6><ul class="pendentes-list">${cityData.s8.length ? cityData.s8.map(item => `<li>${item}</li>`).join('') : '<li>Nenhum</li>'}</ul>`;
+                    html += `<h6><i class="far fa-clock"></i> Janela 12-18</h6><ul class="pendentes-list">${cityData.s12.length ? cityData.s12.map(item => `<li>${item}</li>`).join('') : '<li>Nenhum</li>'}</ul>`;
+                    html += `</div>`;
+                    // Telemática
+                    html += `<div><h5><i class="fas fa-broadcast-tower"></i> Telemática Pendentes</h5>`;
+                    html += `<h6><i class="far fa-clock"></i> Janela 8-12</h6><ul class="pendentes-list">${cityData.t8.length ? cityData.t8.map(item => `<li>${item}</li>`).join('') : '<li>Nenhum</li>'}</ul>`;
+                    html += `<h6><i class="far fa-clock"></i> Janela 12-18</h6><ul class="pendentes-list">${cityData.t12.length ? cityData.t12.map(item => `<li>${item}</li>`).join('') : '<li>Nenhum</li>'}</ul>`;
+                    html += `</div>`;
+                    html += `</div>`;
+                });
+            });
+        });
+        
+        pendingSpecialsContent.innerHTML = html;
+    }
+
+    pendingSpecialsSupervisorFilter.addEventListener('change', renderPendingSpecials);
+    pendingSpecialsEpoFilter.addEventListener('change', renderPendingSpecials);
+
+
+    function showProductivityChart(entityName, entityType, epoParentForCity = null) {
+        let dataToAnalyze = [];
+        if (entityType === 'epo') {
+            dataToAnalyze = originalData.filter(row => getEpoForRow(row) === entityName);
+        } else { // city
+            dataToAnalyze = originalData.filter(row => getEpoForRow(row) === epoParentForCity && String(row['Cidade'] || '').trim() === entityName);
+        }
+
+        let productive = 0, unproductive = 0, pending = 0, baixadaTOA = 0;
+        
+        dataToAnalyze.forEach(row => {
+            if (row.classificacaoStatus === 'Concluídas') {
+                if (classifyProductivity(row) === 'Produtivo') {
+                    productive++;
+                } else {
+                    unproductive++;
+                }
+            } else if (row.classificacaoStatus === 'Pendentes') {
+                pending++;
+            } else if (row.classificacaoStatus === 'Baixadas fora TOA') {
+                baixadaTOA++;
+            }
+        });
+
+        chartTitle.textContent = `Produtividade - ${entityName}`;
+        chartModal.style.display = 'block';
+
+        const ctx = document.getElementById('productivityChart').getContext('2d');
+        if(productivityChartInstance) {
+            productivityChartInstance.destroy();
+        }
+        productivityChartInstance = new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: ['Produtivas', 'Improdutivas', 'Pendentes', 'Baixadas Fora TOA'],
+                datasets: [{
+                    data: [productive, unproductive, pending, baixadaTOA],
+                    backgroundColor: ['#28a745', '#dc3545', '#ffc107', '#fd7e14'],
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { position: 'top' } }
+            }
+        });
+    }
+
+    telXToaContractFilter.addEventListener('keyup', renderTelXToaAnalysis);
+    telXToaCityFilter.addEventListener('change', renderTelXToaAnalysis);
+
+    document.addEventListener('DOMContentLoaded', async () => {
+         updateDisplayedColumns();
+         initializeAllFilters([]);
+         updateMainScorecard([]);
+         scoreTecnicosCidade.style.display = 'none';
+         updateActiveFilterCount();
+
+         try {
+            const [
+                savedDarkMode, savedDx22Data, savedTelematicaData,
+                savedData, savedHistorySignatures, savedHistoryRecurrence, savedFileUploadTimestamps
+            ] = await Promise.all([
+                loadData('darkMode'), loadData('dx22'), loadData('telematica'),
+                loadData('rotas'), loadData('historyFileSignatures'), loadData('historicoRecorrencia'), loadData('fileUploadTimestamps')
+            ]);
+
+            if (savedDarkMode === true) {
+                document.body.classList.add('dark-mode');
+                darkModeToggle.querySelector('i').className = 'fas fa-sun';
+                darkModeToggle.lastChild.textContent = ' Light Mode';
+            } else {
+                document.body.classList.remove('dark-mode');
+                darkModeToggle.querySelector('i').className = 'fas fa-moon';
+                darkModeToggle.lastChild.textContent = ' Dark Mode';
+            }
+
+            dx22Data = savedDx22Data || new Map();
+            telematicaContracts = savedTelematicaData || new Map();
+            processedHistoryFileSignatures = savedHistorySignatures || new Set();
+            historicoRecorrencia = savedHistoryRecurrence || new Map();
+            fileUploadTimestamps = savedFileUploadTimestamps || {}; /* Load timestamps */
+
+            // Display loaded timestamps
+            for (const id in fileUploadTimestamps) {
+                if (fileUploadTimestamps.hasOwnProperty(id)) {
+                    const timestampSpan = document.getElementById(`${id}Timestamp`);
+                    if (timestampSpan) {
+                        timestampSpan.textContent = `Última carga: ${fileUploadTimestamps[id]}`;
+                    }
+                }
+            }
+
+
+            if (savedData && savedData.length > 0) {
+                originalData = savedData;
+                originalData.forEach(row => { row.classificacaoStatus = classifyStatus(row); });
+                initializeAllFilters(originalData);
+                applyFilters();
+                 console.log(`${originalData.length} registros de rota e ${historicoRecorrencia.size} contratos no histórico carregados do banco de dados.`);
+            } else {
+                renderTable([]);
+                renderEpoAnalysis();
+                renderTelXToaAnalysis();
+                renderPendingSpecials();
+            }
+
+        } catch(e) {
+            console.error("Falha ao carregar dados do IndexedDB:", e);
+            alert("Não foi possível carregar os dados salvos. O banco de dados pode estar corrompido.");
+        }
+
+        updateAllFilterButtons();
+        updateActiveFiltersDisplay();
+    });
+
+    function updateActiveFiltersDisplay() {
+        activeFiltersContainer.innerHTML = '';
+
+        const createTag = (type, label, value) => {
+            if (!value) return;
+            const tag = document.createElement('span');
+            tag.className = 'active-filter-tag';
+            tag.innerHTML = `<strong>${label}:</strong> ${value} <button class="remove-filter-btn" data-filter-type="${type}">×</button>`;
+            activeFiltersContainer.appendChild(tag);
+        };
+
+        if (statusFilter.value) createTag('status', 'Status', statusFilter.value);
+        if (supervisorFilter.value) createTag('supervisor', 'Supervisor', supervisorFilter.value);
+        if (epoFilter.value) createTag('epo', 'EPO', epoFilter.value);
+        if (cityFilter.value) createTag('city', 'Cidade', cityFilter.value);
+        if (technicianFilter.value) createTag('technician', 'Técnico', technicianFilter.value);
+        if (dddFilter.value) createTag('ddd', 'DDD', dddFilter.value);
+        if (contractFilter.value) createTag('contract', 'Contrato', contractFilter.value);
+        if (generalSearch.value) createTag('general', 'Busca', generalSearch.value);
+        
+        if (currentAgendaFilter === 'hot') createTag('agenda', 'Agenda', 'Quente');
+        if (currentAgendaFilter === 'cold') createTag('agenda', 'Agenda', 'Fria');
+        if (currentCustomStatusFilter === 'baixadaForaToa') createTag('baixadaForaToa', 'Status Esp.', 'Baixada Fora TOA');
+        if (currentStreamingFilter) createTag('streaming', 'Filtro', 'Apenas Streaming');
+        if (currentDx22Filter) createTag('dx22', 'Filtro', 'Apenas DX22');
+        if (currentTelematicaFilter) createTag('telematica', 'Filtro', 'Apenas Telemática');
+        if (currentRecorrenteFilter) createTag('recorrente', 'Filtro', 'Apenas Recorrentes');
+    }
+
+    function removeFilter(type) {
+        switch(type) {
+            case 'status': statusFilter.value = ''; break;
+            case 'technician': technicianFilter.value = ''; break;
+            case 'city': cityFilter.value = ''; break;
+            case 'epo': epoFilter.value = ''; break;
+            case 'supervisor': supervisorFilter.value = ''; break;
+            case 'ddd': dddFilter.value = ''; break;
+            case 'contract': contractFilter.value = ''; break;
+            case 'general': generalSearch.value = ''; break;
+            case 'agenda': currentAgendaFilter = ''; break;
+            case 'baixadaForaToa': currentCustomStatusFilter = ''; break;
+            case 'streaming': currentStreamingFilter = false; break;
+            case 'dx22': currentDx22Filter = false; break;
+            case 'telematica': currentTelematicaFilter = false; break;
+            case 'recorrente': currentRecorrenteFilter = false; break;
+        }
+        
+        applyFilters();
+        updateDependentFilters();
+    }
+
+    activeFiltersContainer.addEventListener('click', (event) => {
+        if (event.target.classList.contains('remove-filter-btn')) {
+            const filterType = event.target.dataset.filterType;
+            removeFilter(filterType);
+        }
+    });
+
+    document.querySelectorAll('.filter-buttons button').forEach(button => {
+        button.addEventListener('click', () => {
+            updateAllFilterButtons();
+            updateActiveFiltersDisplay();
+        });
+    });
+
+    chartModalClose.onclick = function() {
+        chartModal.style.display = "none";
+    }
+
+    window.onclick = function(event) {
+        if (event.target == chartModal) {
+            chartModal.style.display = "none";
+        }
+        if (!event.target.closest('#contextMenu')) {
+            contextMenu.style.display = 'none';
+        }
+    }
+
+    document.addEventListener('contextmenu', (event) => {
+        const targetCell = event.target.closest('td');
+        if (!targetCell || (!targetCell.classList.contains('epo-name') && !targetCell.classList.contains('city-name'))) {
+            contextMenu.style.display = 'none';
+            return;
+        }
+
+        event.preventDefault();
+
+        contextMenu.dataset.entityName = targetCell.dataset.entityName;
+        contextMenu.dataset.entityType = targetCell.dataset.entityType;
+        contextMenu.dataset.epoParent = targetCell.dataset.epoParent || '';
+
+        contextMenu.style.top = `${event.pageY}px`;
+        contextMenu.style.left = `${event.pageX}px`;
+        contextMenu.style.display = 'block';
+    });
+    
+    // Adiciona os listeners para os botões de exportação com nomes de arquivo dinâmicos
+    exportMainBtn.addEventListener('click', () => {
+        let fileName = 'Relatorio_Principal';
+        if (supervisorFilter.value) fileName += `_${supervisorFilter.value.replace(/\s/g, '-')}`;
+        if (epoFilter.value) fileName += `_${epoFilter.value.replace(/\s|\//g, '-')}`;
+        if (cityFilter.value) fileName += `_${cityFilter.value.replace(/\s/g, '-')}`;
+        exportStyledExcel('dataTable', 'Dados Consolidados', fileName);
+    });
+
+    exportEpoBtn.addEventListener('click', () => {
+        let fileName = 'Analise_por_EPO';
+        const supervisor = epoAnalysisSupervisorFilter.value;
+        const epo = epoAnalysisEpoFilter.value;
+        if (supervisor) fileName += `_${supervisor.replace(/\s/g, '-')}`;
+        if (epo) fileName += `_${epo.replace(/\s|\//g, '-')}`;
+        exportStyledExcel('epoAnalysisTable', 'Analise EPO', fileName);
+    });
+
+    exportTelXToaBtn.addEventListener('click', () => {
+        let fileName = 'Analise_TEL_x_TOA';
+         if (telXToaCityFilter.value) fileName += `_${telXToaCityFilter.value.replace(/\s/g, '-')}`;
+        exportStyledExcel('telXToaTable', 'TEL x TOA', fileName);
+    });
+
+    exportPendingSpecialsBtn.addEventListener('click', () => {
+        exportPendingSpecialsToExcel();
+    });
+
+
+    document.getElementById('contextMenuChart').addEventListener('click', () => {
+        const entityName = contextMenu.dataset.entityName;
+        const entityType = contextMenu.dataset.entityType;
+        const epoParent = contextMenu.dataset.epoParent;
+        if (entityName) {
+            showProductivityChart(entityName, entityType, epoParent);
+        }
+    });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menu Principal - Ferramentas de Rotas</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        :root {
+            /* Tema Preto e Vermelho */
+            --bg-color: #000000;
+            --container-bg-color: #1a1a1a;
+            --text-color: #ffffff;
+            --header-color: #dc3545;
+            --button-bg: #dc3545;
+            --button-hover-bg: #c82333;
+            --button-text-color: white;
+            --border-color: #333333;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: background-color 0.3s, color 0.3s;
+            flex-direction: column; /* Para colocar o toggle em cima do container */
+        }
+        .container {
+            background-color: var(--container-bg-color);
+            padding: 30px 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(220, 53, 69, 0.3);
+            text-align: center;
+            width: 90%;
+            max-width: 500px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border-color);
+        }
+        h1 {
+            color: var(--header-color);
+            margin-bottom: 30px;
+            font-size: 2.2em;
+        }
+        .menu-grid {
+            display: grid;
+            grid-template-columns: 1fr; /* Uma coluna por padrão */
+            gap: 20px;
+        }
+        @media (min-width: 600px) {
+            .menu-grid {
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); /* Duas colunas em telas maiores */
+            }
+        }
+        .menu-button {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background-color: var(--button-bg);
+            color: var(--button-text-color);
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 1.2em;
+            font-weight: bold;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            min-height: 100px; /* Garante tamanho mínimo */
+        }
+        .menu-button:hover {
+            background-color: var(--button-hover-bg);
+            transform: translateY(-3px);
+        }
+        .menu-button i {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            color: rgba(255, 255, 255, 0.9);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Selecione uma Ferramenta</h1>
+        <div class="menu-grid">
+            <a href="analisador_rotas.html" class="menu-button">
+                <i class="fas fa-route"></i>
+                Analisador de Rotas
+            </a>
+            <a href="rota_futura.html" class="menu-button">
+                <i class="fas fa-calendar-alt"></i>
+                Rota Futura
+            </a>
+            <a href="capacidade.cidades.html" class="menu-button">
+                <i class="fas fa-chart-line"></i>
+                Capacidade por Cidade
+            </a>
+        </div>
+    </div>
+</body>
+</html>

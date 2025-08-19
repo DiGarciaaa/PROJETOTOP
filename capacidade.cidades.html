@@ -1,0 +1,1195 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <link rel="icon" href="/favicon.ico" type="image/x-icon">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contador de Visitas por Cidade e Agenda (com Capacidade)</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        :root {
+            /* Tema Claro (Padrão) */
+            --bg-color: #f4f7f6;
+            --container-bg-color: #ffffff;
+            --text-color: #333333;
+            --header-color: #FF073A; /* Neon Red */
+            --border-color: #dee2e6;
+            --table-header-bg: #e9ecef;
+            --table-row-even-bg: #f8f9fa;
+            --scorecard-bg: #f8f9fa;
+            --scorecard-item-bg: #ffffff;
+            --scorecard-label-color: #6c757d;
+            --button-primary-bg: #FF2600; /* Electric Red */
+            --button-primary-hover-bg: #E60000; /* Darker Red */
+            --button-active-bg: #28a745; /* Keep green for active/success */
+            --button-active-hover-bg: #218838; /* Darker green */
+            --button-danger-bg: #FF2600; /* Electric Red */
+            --button-danger-hover-bg: #E60000; /* Darker Red */
+            --button-info-bg-dx22: #FF0077; /* Fuchsia */
+            --button-info-hover-bg-dx22: #CC0066; /* Darker Fuchsia */
+            --button-info-active-bg-dx22: #990044; /* Even Darker Fuchsia */
+            --button-warning-bg-telematica: #FF9900; /* Orange */
+            --button-warning-hover-bg-telematica: #E68A00; /* Darker Orange */
+            --button-warning-active-bg-telematica: #CC7A00; /* Even Darker Orange */
+            --button-streaming-bg: #8A2BE2; /* BlueViolet for streaming */
+            --button-streaming-hover-bg: #7A28CC; /* Darker BlueViolet */
+            --button-agenda-clear-bg: #6c757d;
+            --button-agenda-clear-hover-bg: #5a6268;
+            --button-baixada-fora-toa-bg: #fd7e14;
+            --button-baixada-fora-toa-hover-bg: #e66b0a;
+            --button-recorrente-bg: #007bff;
+            --button-recorrente-hover-bg: #0069d9;
+            --button-recorrente-active-bg: #0056b3;
+            --table-recorrente-match-bg: #e6f2ff;
+            --table-recorrente-match-border: #007bff;
+            --scorecard-recorrente-color: #007bff;
+            --table-baixada-fora-toa-bg: #fff3e6;
+            --table-baixada-fora-toa-text: #d96d00;
+            --table-dx22-match-bg: #eaf6eb;
+            --table-dx22-match-border: #28a745;
+            --table-telematica-match-bg: #fdeeee;
+            --table-telematica-match-border: #FF0000; /* Neon Red for Telematica border */
+            --table-streaming-match-bg: #f0eaf7;
+            --table-streaming-match-border: #8A2BE2; /* BlueViolet for Streaming border */
+            --filter-count-color: #00bcd4;
+            --filter-tag-bg: #e9ecef;
+        }
+
+        /* Tema Escuro */
+        body.dark-mode {
+            --bg-color: #000000;
+            --container-bg-color: #1a1a1a;
+            --text-color: #ffffff;
+            --header-color: #dc3545;
+            --border-color: #333333;
+            --table-header-bg: #2a2a2a;
+            --table-row-even-bg: #222222;
+            --scorecard-bg: #1a1a1a;
+            --scorecard-item-bg: #2a2a2a;
+            --scorecard-label-color: #cccccc;
+            --table-recorrente-match-bg: #002a4d;
+            --table-baixada-fora-toa-bg: #4d2a00;
+            --table-baixada-fora-toa-text: #ffa500;
+            --table-dx22-match-bg: #1a3d1a;
+            --table-telematica-match-bg: #1a1a3d;
+            --table-streaming-match-bg: #2a1a3d;
+            --filter-tag-bg: #333333;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: background-color 0.3s, color 0.3s;
+        }
+        h1, h2, h3, h4 {
+            color: var(--header-color);
+        }
+        .container {
+            background-color: var(--container-bg-color);
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            max-width: 1200px;
+            margin: 0 auto;
+            border: 1px solid var(--border-color);
+        }
+        body.dark-mode .container {
+             box-shadow: 0 2px 10px rgba(220, 53, 69, 0.3);
+        }
+        .file-upload-section {
+            display: flex;
+            align-items: flex-start; /* Align items to the start of the cross axis */
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .file-upload-item { /* New div to group label, input, and indicators */
+            display: flex;
+            flex-direction: column; /* Stack items vertically */
+            gap: 5px; /* Space between label and indicators */
+            margin-bottom: 10px; /* Space between file upload items */
+            flex-grow: 1;
+        }
+        .custom-file-upload {
+            border: 1px solid var(--border-color);
+            display: inline-block;
+            padding: 8px 12px; /* Smaller padding */
+            cursor: pointer;
+            background-color: var(--button-primary-bg);
+            color: white;
+            border-radius: 5px;
+            transition: background-color 0.3s ease;
+            font-size: 14px; /* Smaller font */
+            line-height: 1;
+            align-self: flex-start; /* Align button to the start */
+        }
+        .custom-file-upload:hover {
+            background-color: var(--button-primary-hover-bg);
+        }
+        input[type="file"] {
+            display: none;
+        }
+
+        .filter-info, .agenda-info, .capacity-info {
+            background-color: var(--table-row-even-bg); /* Use theme variable */
+            border-left: 5px solid var(--header-color); /* Use theme variable */
+            padding: 10px;
+            margin-bottom: 15px;
+            font-size: 0.9em;
+            color: var(--text-color); /* Use theme variable */
+        }
+        .agenda-info {
+            border-left-color: #28a745; /* Specific color for agenda info */
+        }
+        .capacity-info {
+            border-left-color: #ffc107; /* Specific color for capacity info */
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        .button-group button {
+            flex: 1;
+            min-width: 150px; /* Ensure minimum width for buttons */
+        }
+        button {
+            background-color: var(--button-primary-bg);
+            color: white;
+            padding: 8px 12px; /* Smaller padding */
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px; /* Smaller font */
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: var(--button-primary-hover-bg);
+        }
+        #results {
+            margin-top: 20px;
+            border-top: 1px solid var(--border-color);
+            padding-top: 15px;
+        }
+        .table-container {
+            margin-bottom: 30px;
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            min-width: 900px;
+            background-color: var(--container-bg-color);
+        }
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 8px;
+            text-align: left;
+            vertical-align: top;
+            color: var(--text-color);
+        }
+        th {
+            background-color: var(--table-header-bg);
+            font-weight: bold;
+            color: var(--header-color); /* Neon red for table headers */
+            white-space: nowrap;
+        }
+        td {
+            white-space: nowrap;
+        }
+        tr:nth-child(even) {
+            background-color: var(--table-row-even-bg);
+        }
+        tr:hover {
+            background-color: var(--table-header-bg); /* Use a subtle hover color */
+        }
+        .error {
+            color: var(--button-danger-bg); /* Use danger color for errors */
+            font-weight: bold;
+        }
+        .loading-message {
+            color: var(--scorecard-label-color); /* Use a muted color for loading */
+            font-style: italic;
+            text-align: center;
+            padding: 15px;
+        }
+        .editable-cell {
+            background-color: #333300; /* Darker yellow/olive for editable cells */
+            cursor: pointer;
+            color: white; /* Ensure text is visible on dark background */
+        }
+        .editable-cell:hover {
+            background-color: #4a4a00;
+        }
+        .status-within {
+            color: #28a745; /* Green */
+            font-weight: bold;
+        }
+        .status-above {
+            color: var(--button-danger-bg); /* Use danger color for above capacity */
+            font-weight: bold;
+        }
+
+        /* Loading indicator and timestamp styles */
+        .loading-indicator {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(0, 0, 0, 0.2);
+            border-top: 2px solid var(--header-color); /* Use header color for spinner */
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            vertical-align: middle;
+            margin-left: 5px;
+            display: none; /* Hidden by default */
+        }
+
+        .file-timestamp {
+            font-size: 0.75em;
+            color: var(--scorecard-label-color);
+            margin-left: 5px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .top-right-buttons {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+            z-index: 1000;
+        }
+        .top-right-buttons button {
+            background-color: #6c757d;
+            color: white;
+            border: none;
+            padding: 8px 12px; /* Smaller padding */
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px; /* Smaller font */
+            transition: background-color 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .top-right-buttons button:hover {
+            background-color: #5a6268;
+        }
+
+        /* Adjust button group within file-upload-section */
+        .file-upload-section .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 0; /* Reset margin from general .button-group */
+            margin-bottom: 0;
+            align-items: center;
+        }
+        .file-upload-section .button-group button {
+            padding: 8px 12px;
+            font-size: 14px;
+            flex: none; /* Do not grow to fill space */
+            width: auto;
+        }
+        /* Specific adjustments for clear buttons */
+        #clearDataBtn, #clearCapacitiesBtn {
+            background-color: var(--button-danger-bg);
+        }
+        #clearDataBtn:hover, #clearCapacitiesBtn:hover {
+            background-color: var(--button-danger-hover-bg);
+        }
+
+        @media (max-width: 768px) {
+            .file-upload-section {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .file-upload-item {
+                width: 100%;
+            }
+            .file-upload-section .button-group {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .file-upload-section .button-group button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="top-right-buttons">
+        <button id="darkModeToggle"><i class="fas fa-moon"></i> Dark Mode</button>
+    </div>
+
+    <div class="container">
+        <h1>Contador de Visitas por Cidade e Agenda (com Capacidade)</h1>
+
+        <p>Selecione um ou mais arquivos Excel (.xlsx) com as colunas "Cidade", "Intervalo de Tempo" e "Categoria da Capacidade".</p>
+        
+        <div class="filter-info">
+            <strong>Filtro de Classes Ativo:</strong> Apenas as **visitas (linhas)** que possuem uma das seguintes categorias serão contadas:
+            <ul id="allowedClassesList" style="list-style-type: disc; margin-left: 20px;">
+                </ul>
+        </div>
+
+        <div class="agenda-info">
+            <strong>Classificação de Agendamento:</strong>
+            <ul>
+                <li>Agenda Fria: Visitas do horário **08:00 - 22:00** (considera variações como "8-22", "8h-22h" etc.)</li>
+                <li>Agenda Quente: Todas as outras visitas com horários válidos na coluna "Intervalo de Tempo".</li>
+            </ul>
+        </div>
+
+        <div class="capacity-info">
+            <strong>Informações de Capacidade:</strong>
+            <ul>
+                <li>A coluna "Capacidade" é baseada em dados predefinidos no script, mas pode ser personalizada.</li>
+                <li>Você pode **clicar e editar** o valor da capacidade diretamente na tabela.</li>
+                <li>O status "Dentro" ou "Acima" será atualizado automaticamente.</li>
+                <li>As alterações na capacidade são **salvas localmente** no seu navegador para uso futuro.</li>
+            </ul>
+        </div>
+
+        <div class="file-upload-section">
+            <div class="file-upload-item">
+                <label for="excelFile" class="custom-file-upload">
+                    <i class="fas fa-file-upload"></i> Selecionar Arquivos de Rota...
+                </label>
+                <input type="file" id="excelFile" accept=".xlsx, .xls" multiple>
+                <span class="loading-indicator" id="excelFileLoading"></span>
+                <span class="file-timestamp" id="excelFileTimestamp"></span>
+            </div>
+            <div class="button-group">
+                <button onclick="processExcel()">Contar Dados</button>
+                <button onclick="exportToExcel()" id="exportButton" style="display: none;">Exportar para Excel</button>
+                <button id="clearDataBtn" class="clear-storage-btn">Limpar Dados Carregados</button>
+                <button id="clearCapacitiesBtn" class="clear-storage-btn">Limpar Capacidades Salvas</button>
+            </div>
+        </div>
+        
+        <div id="results">
+            <p>Nenhum arquivo Excel carregado ainda.</p>
+        </div>
+    </div>
+
+    <script>
+        // IndexedDB Helper Functions
+        function openDB() {
+            // Version incremented to 2 to ensure new stores are created/updated
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open('ContadorVisitasDB_v1', 2);
+
+                request.onupgradeneeded = (event) => {
+                    const db = event.target.result;
+                    if (!db.objectStoreNames.contains('fileUploadTimestamps')) {
+                        db.createObjectStore('fileUploadTimestamps', { keyPath: 'id' });
+                    }
+                    if (!db.objectStoreNames.contains('cityCapacities')) {
+                        db.createObjectStore('cityCapacities', { keyPath: 'city' });
+                    }
+                    if (!db.objectStoreNames.contains('darkMode')) {
+                        db.createObjectStore('darkMode', { keyPath: 'key' });
+                    }
+                };
+
+                request.onsuccess = (event) => {
+                    resolve(event.target.result);
+                };
+
+                request.onerror = (event) => {
+                    console.error("Erro no IndexedDB:", event.target.error);
+                    reject(event.target.error);
+                };
+            });
+        }
+
+        async function saveData(storeName, data) {
+            const db = await openDB();
+            const transaction = db.transaction(storeName, 'readwrite');
+            const store = transaction.objectStore(storeName);
+            
+            // Clear store for non-additive data types before saving
+            if (storeName === 'fileUploadTimestamps' || storeName === 'cityCapacities' || storeName === 'darkMode') {
+                await store.clear();
+            }
+
+            const putPromises = [];
+
+            if (storeName === 'fileUploadTimestamps') {
+                for (const key in data) {
+                    if (data.hasOwnProperty(key)) {
+                        putPromises.push(store.put({ id: key, value: data[key] }));
+                    }
+                }
+            } else if (storeName === 'cityCapacities') {
+                 for (const cityKey in data) {
+                    if (data.hasOwnProperty(cityKey)) {
+                        putPromises.push(store.put({ city: cityKey, capacity: data[cityKey] }));
+                    }
+                }
+            } else if (storeName === 'darkMode') {
+                putPromises.push(store.put({ key: 'isDarkMode', value: data }));
+            }
+            // For future, if any other data type needs to be saved
+            // else if (Array.isArray(data)) {
+            //     data.forEach(item => putPromises.push(store.put(item)));
+            // } else {
+            //     putPromises.push(store.put(data));
+            // }
+
+            return new Promise((resolve, reject) => {
+                transaction.oncomplete = () => resolve();
+                transaction.onerror = (event) => reject(event.target.error);
+            });
+        }
+
+        async function loadData(storeName) {
+            const db = await openDB();
+            const transaction = db.transaction(storeName, 'readonly');
+            const store = transaction.objectStore(storeName);
+            const request = store.getAll();
+
+            return new Promise((resolve, reject) => {
+                request.onsuccess = (event) => {
+                    const result = event.target.result;
+                    if (storeName === 'fileUploadTimestamps') {
+                        const timestamps = {};
+                        result.forEach(item => { timestamps[item.id] = item.value; });
+                        resolve(timestamps);
+                    } else if (storeName === 'cityCapacities') {
+                        const capacities = {};
+                        result.forEach(item => { capacities[item.city] = item.capacity; });
+                        resolve(capacities);
+                    } else if (storeName === 'darkMode') {
+                        const darkModeSetting = result.find(item => item.key === 'isDarkMode');
+                        resolve(darkModeSetting ? darkModeSetting.value : false);
+                    }
+                    else {
+                        resolve(result);
+                    }
+                };
+                request.onerror = (event) => reject(event.target.error);
+            });
+        }
+
+        async function clearData(storeName) {
+            const db = await openDB();
+            const transaction = db.transaction(storeName, 'readwrite');
+            const store = transaction.objectStore(storeName);
+            store.clear();
+            return new Promise((resolve, reject) => {
+                transaction.oncomplete = () => resolve();
+                transaction.onerror = (event) => reject(event.target.error);
+            });
+        }
+
+        // --- End IndexedDB Helper Functions ---
+
+        // List of allowed classes for filtering
+        const ALLOWED_CLASSES = [
+            "Classe 8",
+            "Classe 9",
+            "Classe 10",
+            "Classe 12",
+            "Classe 14"
+        ];
+        
+        // Mapping of full class name to short table header
+        const CLASS_HEADERS_MAP = {
+            "Classe 8": "C8",
+            "Classe 9": "C9",
+            "Classe 10": "C10",
+            "Classe 12": "C12",
+            "Classe 14": "C14"
+        };
+
+        // Default capacities (will be overridden by IndexedDB if saved data exists)
+        // NOTE: City names must EXACTLY match your Excel (after trim and uppercase)
+        let CITY_CAPACITIES = {
+            "AMERICANA": 90, "AGUDOS": 5, "ARARAS": 25, "CAPIVARI": 0, "AMERICO BRASILIENSE": 5,
+            "AMPARO": 8, "ANDRADINA": 5, "APARECIDA": 13, "ARACATUBA": 25, "ARARAQUARA": 60,
+            "ELIAS FAUSTO": 0, "HORTOLANDIA": 12, "AVARE": 5, "BADY BASSITT": 5, "BARRINHA": 15,
+            "BATATAIS": 25, "CRAVINHOS": 16, "BAURU": 100, "BEBEDOURO": 25, "CACAPAVA": 25,
+            "BIRIGUI": 5, "TATUI": 25, "BOTUCATU": 50, "JACAREI": 25, "CACHOEIRA PAULISTA": 13,
+            "CAMPINAS": 200, "CAMPOS DO JORDAO": 5, "LIMEIRA": 25, "CARAGUATATUBA": 70, "ARTUR NOGUEIRA": 10,
+            "CATANDUVA": 5, "IPERO": 10, "CASA BRANCA": 10, "COSMOPOLIS": 10, "JARDINOPOLIS": 25,
+            "CRUZEIRO": 10, "PINDAMONHANGABA": 25, "TIETE": 20, "DRACENA": 5, "JOSE BONIFACIO": 5,
+            "TREMEMBE": 30, "FERNANDOPOLIS": 25, "FRANCA": 50, "GARCA": 5, "PONTAL": 17,
+            "GUAPIACU": 5, "GUARARAPES": 5, "GUARATINGUETA": 40, "SAO JOSE DOS CAMPOS": 125, "MONTE MOR": 0,
+            "IBATE": 5, "IBIUNA": 5, "INDAIATUBA": 75, "CERQUILHO": 25, "TAUBATE": 50,
+            "ITAPETININGA": 20, "ITAPEVA": 5, "CORDEIROPOLIS": 5, "ITUVERAVA": 25, "JABOTICABAL": 25,
+            "BERTIOGA": 25, "DESCALVADO": 5, "JALES": 5, "SANTA ROSA DE VITERBO": 15, "JAU": 50,
+            "ESPIRITO SANTO DO PINHAL": 10, "LARANJAL PAULISTA": 5, "ITAPIRA": 12, "LENCOIS PAULISTA": 5,
+            "NOVA ODESSA": 10, "LINS": 5, "LORENA": 25, "JAGUARIUNA": 20, "MARILIA": 75,
+            "MATAO": 5, "MIRANDOPOLIS": 5, "MIRASSOL": 5, "LEME": 10, "MOGI GUACU": 20,
+            "MOGI MIRIM": 25, "LOUVEIRA": 5, "MONTE ALTO": 25, "MOCOCA": 12, "RAFARD": 0,
+            "SERRANA": 15, "ORLANDIA": 5, "OURINHOS": 5, "PAULINIA": 20, "PEDREIRA": 8,
+            "PENAPOLIS": 5, "CUBATAO": 25, "PIEDADE": 5, "GUARUJA": 60, "PIRACICABA": 75,
+            "PIRASSUNUNGA": 10, "BARRETOS": 25, "PORTO FELIZ": 20, "PORTO FERREIRA": 5, "POTIM": 12,
+            "POTIRENDABA": 5, "ITANHAEM": 25, "SANTA CRUZ DAS PALMEIRAS": 8, "PRESIDENTE PRUDENTE": 25,
+            "PROMISSAO": 5, "ADAMANTINA": 5, "MONGAGUA": 25, "RIBEIRAO PRETO": 110, "RIO CLARO": 25,
+            "SANTA BARBARA D OESTE": 25, "SANTA GERTRUDES": 5, "SANTA CRUZ DO RIO PARDO": 5,
+            "SAO JOAO DA BOA VISTA": 12, "GUAIRA": 25, "PERUIBE": 25, "SAO CARLOS": 75,
+            "SAO JOSE DO RIO PARDO": 5, "SAO JOAQUIM DA BARRA": 25, "SERRA NEGRA": 5,
+            "SAO JOSE DO RIO PRETO": 80, "PRAIA GRANDE": 100, "SAO SEBASTIAO": 25, "REGISTRO": 30,
+            "TAMBAU": 10, "OLIMPIA": 25, "SERTAOZINHO": 25, "SOROCABA": 325, "SUMARE": 25,
+            "ALVARES MACHADO": 5, "BOITUVA": 10, "SANTOS": 110, "PRESIDENTE BERNARDES": 8,
+            "SAO VICENTE": 60, "UBATUBA": 25, "VALINHOS": 10, "VALPARAISO": 5, "VINHEDO": 10,
+            "VOTORANTIM": 15, "VOTUPORANGA": 5
+        };
+
+
+        // Global variable to store counted data after processing
+        let globalCounts = {};
+        let fileUploadTimestamps = {}; // Object to store timestamps
+
+        /**
+         * Classifies a time interval as 'Agenda Quente' or 'Agenda Fria'.
+         * @param {string} interval - The time interval to be classified (e.g., "08:00 - 22:00").
+         * @returns {string} - "Agenda Fria" or "Agenda Quente".
+         */
+        function classifyAgenda(interval) {
+            const cleanedInterval = String(interval || '').trim(); 
+            
+            // Normalize the interval for a more robust comparison
+            const normalizedInterval = cleanedInterval
+                .replace(/\s*-\s*/g, '-') // Normalize dashes
+                .replace(/:00/g, '')     // Remove ":00"
+                .replace(/h/g, '')       // Remove "h"
+                .replace(/das\s*/g, '')  // Remove "das "
+                .replace(/às\s*/g, '')  // Remove "às "
+                .replace(/\s+/g, '')     // Remove spaces remaining
+                .toLowerCase();          // Convert to lowercase
+
+            if (normalizedInterval.includes("8-22")) { 
+                return "Agenda Fria";
+            }
+            return "Agenda Quente"; 
+        }
+
+        /**
+         * Finds the actual column name in a list of headers, ignoring case and spaces.
+         * @param {Array<string>} headers - List of header strings.
+         * @param {string} targetName - The column name to search for (e.g., "Cidade").
+         * @returns {string|null} - The exact column name found or null if not found.
+         */
+        function findColumnName(headers, targetName) {
+            const lowerTargetName = targetName.toLowerCase().trim();
+            for (const header of headers) {
+                if (typeof header === 'string' && header.toLowerCase().trim() === lowerTargetName) {
+                    return header;
+                }
+            }
+            return null;
+        }
+
+        /**
+         * Consolidates data from multiple Excel files or processing runs.
+         * Sums counts for the same city and category.
+         * @param {Array<Object>} newData - Data from a single Excel file.
+         * @param {Object} currentCounts - The current aggregated counts.
+         * @param {string} cityColName - Column name for City.
+         * @param {string|null} intervalColName - Column name for Interval.
+         * @param {string} categoryColName - Column name for Category.
+         * @returns {Object} - Updated aggregated counts.
+         */
+        function consolidateExcelData(newData, currentCounts, cityColName, intervalColName, categoryColName) {
+            newData.forEach(row => {
+                const city = row[cityColName];
+                const interval = row[intervalColName];
+                const category = row[categoryColName];
+
+                if (!city) return;
+                const cleanedCity = String(city).trim().toUpperCase(); 
+                if (cleanedCity === '') return;
+
+                const cleanedCategory = category ? String(category).trim() : '';
+                
+                if (!categoryColName || !ALLOWED_CLASSES.includes(cleanedCategory)) {
+                    return; 
+                }
+                
+                if (!currentCounts[cleanedCity]) {
+                    currentCounts[cleanedCity] = {
+                        total: 0,
+                        categories: {}, 
+                        agendaTypes: {
+                            "Agenda Quente": 0,
+                            "Agenda Fria": 0
+                        }
+                    };
+                    ALLOWED_CLASSES.forEach(cls => {
+                        currentCounts[cleanedCity].categories[cls] = 0; 
+                    });
+                }
+                
+                currentCounts[cleanedCity].total++;
+
+                if (intervalColName && interval) { 
+                    const agendaType = classifyAgenda(interval);
+                    currentCounts[cleanedCity].agendaTypes[agendaType]++;
+                }
+                
+                if (cleanedCategory !== '') { 
+                    currentCounts[cleanedCity].categories[cleanedCategory]++;
+                }
+            });
+            return currentCounts;
+        }
+
+        /**
+         * Displays the counted results in two HTML tables, separated by capacity status.
+         * @param {Object} counts - The counted data by city.
+         */
+        function displayResults(counts) {
+            globalCounts = counts; // Store the counted data globally
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = ''; // Clear previous results
+
+            const exportButton = document.getElementById('exportButton');
+
+            if (Object.keys(counts).length === 0) {
+                 resultsDiv.innerHTML = '<p>Nenhum dado encontrado com as classes filtradas.</p>';
+                 exportButton.style.display = 'none'; // Hide button if no data
+                 return;
+            }
+
+            const citiesAboveCapacity = {};
+            const citiesWithinCapacity = {};
+
+            for (const city in counts) {
+                const cityInfo = counts[city];
+                // Ensure capacity is a number; default to 0 if not defined or 'N/A'
+                const currentCapacity = typeof CITY_CAPACITIES[city] === 'number' ? CITY_CAPACITIES[city] : 0; 
+
+                if (cityInfo.total > currentCapacity) {
+                    citiesAboveCapacity[city] = cityInfo;
+                } else {
+                    citiesWithinCapacity[city] = cityInfo;
+                }
+            }
+
+            // Generate and add table for cities Above Capacity
+            resultsDiv.innerHTML += generateTableHtml(citiesAboveCapacity, 'Cidades Acima da Capacidade', 'above-capacity');
+            
+            // Generate and add table for cities Within Capacity
+            resultsDiv.innerHTML += generateTableHtml(citiesWithinCapacity, 'Cidades Dentro da Capacidade', 'within-capacity');
+
+            // Show the export button once results are displayed
+            exportButton.style.display = 'block'; 
+        }
+
+        /**
+         * Reads an Excel file and returns its JSON data.
+         * Manages loading indicator and timestamp display for a specific file input.
+         * @param {File} file - The File object to read.
+         * @param {string} fileInputId - The ID of the corresponding file input element (e.g., 'excelFile').
+         * @returns {Promise<Array<Object>>} - A promise that resolves with the parsed JSON data.
+         */
+        function readExcelFile(file, fileInputId) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                const loadingIndicator = document.getElementById(`${fileInputId}Loading`);
+                const timestampDisplay = document.getElementById(`${fileInputId}Timestamp`);
+
+                if (loadingIndicator) loadingIndicator.style.display = 'inline-block'; // Show spinner
+                if (timestampDisplay) timestampDisplay.textContent = ''; // Clear previous timestamp
+
+                reader.onload = (e) => {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        const sheetName = workbook.SheetNames[0]; 
+                        const worksheet = workbook.Sheets[sheetName];
+                        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+                        resolve(jsonData);
+                    } catch (error) {
+                        console.error(`Erro ao ler o arquivo Excel (${file.name}):`, error);
+                        reject(new Error(`Erro ao ler o arquivo ${file.name}. Verifique se é um Excel válido.`));
+                    } finally {
+                        if (loadingIndicator) loadingIndicator.style.display = 'none'; // Hide spinner
+                        fileUploadTimestamps[fileInputId] = new Date().toLocaleString(); // Store formatted time
+                        if (timestampDisplay) timestampDisplay.textContent = `Última carga: ${fileUploadTimestamps[fileInputId]}`;
+                        saveData('fileUploadTimestamps', fileUploadTimestamps); // Persist timestamps
+                    }
+                };
+
+                reader.onerror = (error) => {
+                    if (loadingIndicator) loadingIndicator.style.display = 'none';
+                    reject(new Error(`Não foi possível ler o arquivo ${file.name}.`));
+                };
+
+                reader.readAsArrayBuffer(file);
+            });
+        }
+
+
+        /**
+         * Main function to process the selected Excel files.
+         */
+        async function processExcel() {
+            const fileInput = document.getElementById('excelFile');
+            const resultsDiv = document.getElementById('results');
+            const files = fileInput.files;
+
+            if (files.length === 0) {
+                resultsDiv.innerHTML = '<p class="error">Por favor, selecione um ou mais arquivos Excel.</p>';
+                document.getElementById('exportButton').style.display = 'none'; // Hide button
+                return;
+            }
+
+            resultsDiv.innerHTML = '<p class="loading-message">Processando arquivos... Por favor, aguarde.</p>';
+            document.getElementById('exportButton').style.display = 'none'; // Hide button during processing
+            
+            let consolidatedData = {};
+            let hasValidData = false;
+            let commonErrors = [];
+            
+            // Reset globalCounts before processing new files
+            globalCounts = {};
+
+            try {
+                const fileReadPromises = Array.from(files).map(file => readExcelFile(file, 'excelFile'));
+                const allFilesData = await Promise.allSettled(fileReadPromises);
+
+                for (const result of allFilesData) {
+                    if (result.status === 'fulfilled') {
+                        const fileData = result.value;
+                        if (fileData.length === 0) {
+                            commonErrors.push("Um dos arquivos está vazio.");
+                            continue;
+                        }
+
+                        const firstRowKeys = Object.keys(fileData[0] || {});
+                        const cityNameInFile = findColumnName(firstRowKeys, 'Cidade');
+                        const intervalNameInFile = findColumnName(firstRowKeys, 'Intervalo de Tempo');
+                        const categoryNameInFile = findColumnName(firstRowKeys, 'Categoria da Capacidade') || findColumnName(firstRowKeys, 'Categorias da Capacidade');
+
+                        if (!cityNameInFile || !categoryNameInFile) {
+                            commonErrors.push(`Um dos arquivos não possui as colunas essenciais ("Cidade" e "Categoria da Capacidade").`);
+                            continue;
+                        }
+                        
+                        // Consolidate data from this file into globalCounts
+                        consolidatedData = consolidateExcelData(fileData, consolidatedData, cityNameInFile, intervalNameInFile, categoryNameInFile);
+                        hasValidData = true;
+
+                    } else {
+                        commonErrors.push(result.reason.message || "Erro desconhecido ao ler um arquivo.");
+                    }
+                }
+
+                if (!hasValidData) {
+                    resultsDiv.innerHTML = `<p class="error">Nenhum dado válido encontrado nos arquivos selecionados.</p>`;
+                    if (commonErrors.length > 0) {
+                         resultsDiv.innerHTML += `<h4>Detalhes do Erro:</h4><ul>${commonErrors.map(err => `<li>${err}</li>`).join('')}</ul>`;
+                    }
+                    return;
+                }
+
+                displayResults(consolidatedData);
+
+            } catch (error) {
+                resultsDiv.innerHTML = `<p class="error">Erro geral ao processar os arquivos: ${error.message}</p>`;
+                console.error("Erro no processamento principal:", error);
+            } finally {
+                // This is specifically for the main loading message, individual file spinners are handled by readExcelFile
+                // document.getElementById('loading').style.display = 'none'; // No 'loading' element with this ID anymore, it's done by specific input loading indicators.
+                fileInput.value = ''; // Clear file input
+            }
+        }
+
+        /**
+         * Handles updating capacity when an editable cell is blurred.
+         * @param {Event} event - The blur event.
+         */
+        async function updateCapacityAndReRender(event) {
+            const cell = event.target;
+            const city = cell.dataset.city;
+            let newCapacity = parseInt(cell.textContent.trim());
+
+            // Validate input
+            if (isNaN(newCapacity) || newCapacity < 0) {
+                alert('Por favor, insira um número válido para a capacidade (não-negativo).');
+                // Revert to original value if invalid
+                cell.textContent = cell.dataset.originalCapacity !== 'N/A' ? cell.dataset.originalCapacity : 'N/A';
+                return;
+            }
+
+            // Update capacity in the global object and IndexedDB
+            CITY_CAPACITIES[city] = newCapacity;
+            cell.dataset.originalCapacity = newCapacity; 
+            await saveData('cityCapacities', CITY_CAPACITIES); // Persist changes
+
+            // Re-render results to update status and potentially move rows between tables
+            // This re-reads globalCounts (which is already updated) and re-displays tables
+            displayResults(globalCounts);
+        }
+
+        /**
+         * Generates an HTML table for a given set of city data.
+         * @param {Object} citiesInfo - Object containing city data.
+         * @param {string} title - Title for the table.
+         * @param {string} tableIdSuffix - Suffix for the table ID.
+         * @returns {string} - HTML string of the table.
+         */
+        function generateTableHtml(citiesInfo, title, tableIdSuffix) {
+            // Custom sort function: cities with defined capacity first, then alphabetical
+            const sortedCities = Object.keys(citiesInfo).sort((cityA, cityB) => {
+                const capacityA = CITY_CAPACITIES[cityA];
+                const capacityB = CITY_CAPACITIES[cityB];
+
+                const isCapacityANumber = typeof capacityA === 'number';
+                const isCapacityBNumber = typeof capacityB === 'number';
+
+                if (isCapacityANumber && !isCapacityBNumber) {
+                    return -1; // A has number, B doesn't, A comes first
+                }
+                if (!isCapacityANumber && isCapacityBNumber) {
+                    return 1; // B has number, A doesn't, B comes first
+                }
+                // If both have numbers or both don't, sort alphabetically
+                return cityA.localeCompare(cityB);
+            });
+
+
+            if (sortedCities.length === 0) {
+                return `<div class="table-container"><h3>${title}</h3><p>Nenhuma cidade neste grupo.</p></div>`;
+            }
+
+            let html = `<div class="table-container"><h3>${title}</h3>`;
+            html += `<table id="table-${tableIdSuffix}">`;
+            html += '<thead>';
+            html += '<tr>';
+            html += '<th>Cidade</th>';
+            html += '<th>Total de Visitas</th>';
+            html += '<th>Agenda Quente</th>';
+            html += '<th>Agenda Fria</th>';
+            html += '<th>Capacidade</th>';
+            html += '<th>Status</th>';
+            
+            ALLOWED_CLASSES.forEach(cls => {
+                html += `<th>${CLASS_HEADERS_MAP[cls] || cls}</th>`; 
+            });
+
+            html += '</tr>';
+            html += '</thead>';
+            html += '<tbody>';
+
+            sortedCities.forEach(city => {
+                const cityInfo = citiesInfo[city];
+                const currentCapacity = CITY_CAPACITIES[city] !== undefined ? CITY_CAPACITIES[city] : 'N/A';
+                
+                let status = 'N/A';
+                let statusClass = '';
+                if (typeof currentCapacity === 'number') {
+                    if (cityInfo.total <= currentCapacity) {
+                        status = 'Dentro';
+                        statusClass = 'status-within';
+                    } else {
+                        status = 'Acima';
+                        statusClass = 'status-above';
+                    }
+                }
+
+                html += `<tr id="row-${city.replace(/\s/g, '_')}">`; 
+                html += `<td><strong>${city}</strong></td>`;
+                html += `<td data-total-visits="${cityInfo.total}">${cityInfo.total}</td>`; 
+                html += `<td>${cityInfo.agendaTypes["Agenda Quente"] || 0}</td>`;
+                html += `<td>${cityInfo.agendaTypes["Agenda Fria"] || 0}</td>`;
+                
+                html += `<td class="editable-cell" 
+                           contenteditable="true" 
+                           data-city="${city}" 
+                           data-original-capacity="${currentCapacity}"
+                           onblur="updateCapacityAndReRender(event)">${currentCapacity}</td>`;
+                
+                html += `<td class="status-cell ${statusClass}">${status}</td>`;
+
+                ALLOWED_CLASSES.forEach(cls => {
+                    html += `<td>${cityInfo.categories[cls] || 0}</td>`;
+                });
+
+                html += `</tr>`;
+            });
+
+            html += '</tbody>';
+            html += '</table></div>';
+            return html;
+        }
+
+        /**
+         * Function to export the displayed table data to an Excel file using ExcelJS.
+         * Applies colors and borders based on analysis status.
+         */
+        async function exportToExcel() {
+            const workbook = new ExcelJS.Workbook();
+            
+            // Define common border style
+            const thinBorder = {
+                top: { style: 'thin' },
+                left: { style: 'thin' },
+                bottom: { style: 'thin' },
+                right: { style: 'thin' }
+            };
+
+            // Define header style
+            const headerStyle = {
+                fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFC82333' } }, // Red
+                font: { color: { argb: 'FFFFFFFF' }, bold: true },
+                alignment: { vertical: 'middle', horizontal: 'center' },
+                border: thinBorder
+            };
+
+            // Define row styles based on status
+            const withinCapacityFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9EAD3' } }; // Light Green
+            const aboveCapacityFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFD9C2' } }; // Light Orange
+
+            const defaultCellBorder = thinBorder;
+
+            const headers = [
+                'Cidade', 'Total de Visitas', 'Agenda Quente', 'Agenda Fria',
+                'Capacidade', 'Status', ...ALLOWED_CLASSES.map(cls => CLASS_HEADERS_MAP[cls] || cls)
+            ];
+
+            // Helper to add a sheet
+            const addSheet = (sheetName, citiesData, isAboveCapacitySheet) => {
+                const worksheet = workbook.addWorksheet(sheetName);
+
+                // Add header row
+                const headerRow = worksheet.getRow(1);
+                headers.forEach((headerText, colIndex) => {
+                    const cell = headerRow.getCell(colIndex + 1);
+                    cell.value = headerText;
+                    cell.style = headerStyle;
+                });
+
+                // Add data rows
+                // Sort cities for Excel export using the same custom logic
+                Object.keys(citiesData).sort((cityA, cityB) => {
+                    const capacityA = CITY_CAPACITIES[cityA];
+                    const capacityB = CITY_CAPACITIES[cityB];
+
+                    const isCapacityANumber = typeof capacityA === 'number';
+                    const isCapacityBNumber = typeof capacityB === 'number';
+
+                    if (isCapacityANumber && !isCapacityBNumber) {
+                        return -1;
+                    }
+                    if (!isCapacityANumber && isCapacityBNumber) {
+                        return 1;
+                    }
+                    return cityA.localeCompare(cityB);
+                }).forEach(city => {
+                    const cityInfo = citiesData[city];
+                    const currentCapacity = CITY_CAPACITIES[city] !== undefined ? CITY_CAPACITIES[city] : 'N/A';
+                    
+                    let status = 'N/A';
+                    if (typeof currentCapacity === 'number') {
+                        status = (cityInfo.total > currentCapacity) ? 'Acima' : 'Dentro';
+                    }
+
+                    const rowData = [
+                        city,
+                        cityInfo.total,
+                        cityInfo.agendaTypes["Agenda Quente"] || 0,
+                        cityInfo.agendaTypes["Agenda Fria"] || 0,
+                        currentCapacity,
+                        status
+                    ];
+
+                    ALLOWED_CLASSES.forEach(cls => {
+                        rowData.push(cityInfo.categories[cls] || 0);
+                    });
+
+                    const dataRow = worksheet.addRow(rowData);
+                    dataRow.eachCell({ includeEmpty: true }, (cell) => {
+                        cell.border = defaultCellBorder;
+                        if (isAboveCapacitySheet) {
+                            cell.fill = aboveCapacityFill;
+                        } else {
+                            cell.fill = withinCapacityFill;
+                        }
+                    });
+                });
+
+                // Adjust column widths
+                worksheet.columns.forEach(column => {
+                    let maxLength = 0;
+                    column.eachCell({ includeEmpty: true }, cell => {
+                        let columnLength = cell.value ? cell.value.toString().length : 10;
+                        if (columnLength > maxLength) {
+                            maxLength = columnLength;
+                        }
+                    });
+                    column.width = maxLength < 10 ? 10 : maxLength + 2;
+                });
+            };
+
+            const citiesAboveCapacity = {};
+            const citiesWithinCapacity = {};
+
+            for (const city in globalCounts) {
+                const cityInfo = globalCounts[city];
+                const currentCapacity = typeof CITY_CAPACITIES[city] === 'number' ? CITY_CAPACITIES[city] : 0; 
+
+                if (cityInfo.total > currentCapacity) {
+                    citiesAboveCapacity[city] = cityInfo;
+                } else {
+                    citiesWithinCapacity[city] = cityInfo;
+                }
+            }
+            
+            // Add sheets if data exists
+            if (Object.keys(citiesAboveCapacity).length > 0) {
+                addSheet('Cidades Acima Capacidade', citiesAboveCapacity, true);
+            }
+            if (Object.keys(citiesWithinCapacity).length > 0) {
+                addSheet('Cidades Dentro Capacidade', citiesWithinCapacity, false);
+            }
+
+            if (workbook.worksheets.length === 0) {
+                alert('Nenhum dado para exportar. Por favor, processe um arquivo Excel primeiro.');
+                return;
+            }
+
+            // Generate and download file
+            const date = new Date();
+            const timestamp = `${date.getFullYear()}${(date.getMonth() + 1).toString().padStart(2, '0')}${date.getDate().toString().padStart(2, '0')}_${date.getHours().toString().padStart(2, '0')}${date.getMinutes().toString().padStart(2, '0')}`;
+            const fileName = `Relatorio_Capacidade_Cidades_${timestamp}.xlsx`;
+            
+            const buffer = await workbook.xlsx.writeBuffer();
+            const blob = new Blob([buffer], { type: 'application/octet-stream' });
+            
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // Helper function for file download (simulates file-saver)
+        function saveAs(blob, fileName) {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        }
+
+        // Dark Mode Toggle Logic
+        const darkModeToggle = document.getElementById('darkModeToggle');
+        darkModeToggle.addEventListener('click', async () => {
+            document.body.classList.toggle('dark-mode');
+            const isDarkMode = document.body.classList.contains('dark-mode');
+            try {
+                await saveData('darkMode', isDarkMode);
+            } catch(e) {
+                console.error("Não foi possível salvar a preferência de tema.", e);
+            }
+            darkModeToggle.querySelector('i').className = isDarkMode ? 'fas fa-sun' : 'fas fa-moon';
+            darkModeToggle.lastChild.textContent = isDarkMode ? ' Light Mode' : ' Dark Mode';
+        });
+
+        // Clear Data Button
+        document.getElementById('clearDataBtn').addEventListener('click', async () => {
+            if (confirm('Tem certeza que deseja limpar todos os dados carregados? Isso não afetará as capacidades salvas.')) {
+                globalCounts = {};
+                document.getElementById('excelFile').value = ''; // Clear file input
+                document.getElementById('excelFileTimestamp').textContent = ''; // Clear timestamp
+                document.getElementById('results').innerHTML = '<p>Nenhum arquivo Excel carregado ainda.</p>';
+                document.getElementById('exportButton').style.display = 'none';
+                alert('Dados carregados limpos com sucesso!');
+            }
+        });
+
+        // Clear Capacities Button
+        document.getElementById('clearCapacitiesBtn').addEventListener('click', async () => {
+            if (confirm('ATENÇÃO! Isso apagará TODAS AS CAPACIDADES DE CIDADE salvas no seu navegador. Deseja continuar?')) {
+                try {
+                    await clearData('cityCapacities');
+                    CITY_CAPACITIES = {}; // Reset capacities to empty or original defaults if preferred
+                    // Optionally, you might want to re-populate CITY_CAPACITIES with the initial hardcoded defaults here
+                    // For now, it will effectively be empty until a file is loaded or capacities are manually entered.
+                    
+                    // Re-render results if there's data currently displayed
+                    if (Object.keys(globalCounts).length > 0) {
+                        displayResults(globalCounts); // Re-display with reset capacities
+                    }
+                    alert('Capacidades salvas limpas com sucesso!');
+                } catch (e) {
+                    console.error("Erro ao limpar capacidades:", e);
+                    alert("Ocorreu um erro ao limpar as capacidades salvas.");
+                }
+            }
+        });
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', async () => {
+            const listElement = document.getElementById('allowedClassesList');
+            if (listElement) {
+                listElement.innerHTML = ALLOWED_CLASSES.map(cls => `<li>${cls}</li>`).join('');
+            }
+
+            try {
+                const [savedDarkMode, savedCapacities, savedTimestamps] = await Promise.all([
+                    loadData('darkMode'),
+                    loadData('cityCapacities'),
+                    loadData('fileUploadTimestamps')
+                ]);
+
+                // Apply dark mode setting
+                if (savedDarkMode === true) {
+                    document.body.classList.add('dark-mode');
+                    darkModeToggle.querySelector('i').className = 'fas fa-sun';
+                    darkModeToggle.lastChild.textContent = ' Light Mode';
+                } else {
+                    document.body.classList.remove('dark-mode');
+                    darkModeToggle.querySelector('i').className = 'fas fa-moon';
+                    darkModeToggle.lastChild.textContent = ' Dark Mode';
+                }
+
+                // Apply saved capacities
+                if (savedCapacities && Object.keys(savedCapacities).length > 0) {
+                    Object.assign(CITY_CAPACITIES, savedCapacities); // Merge saved capacities
+                    console.log("Capacidades carregadas do IndexedDB.");
+                }
+
+                // Display loaded timestamps
+                fileUploadTimestamps = savedTimestamps || {};
+                for (const id in fileUploadTimestamps) {
+                    if (fileUploadTimestamps.hasOwnProperty(id)) {
+                        const timestampSpan = document.getElementById(`${id}Timestamp`);
+                        if (timestampSpan) {
+                            timestampSpan.textContent = `Última carga: ${fileUploadTimestamps[id]}`;
+                        }
+                    }
+                }
+
+            } catch (e) {
+                console.error("Falha ao carregar dados do IndexedDB:", e);
+                alert("Não foi possível carregar os dados salvos. Seu navegador pode ter bloqueado o armazenamento local ou o banco de dados está corrompido. Tente recarregar a página.");
+                // Potentially clear data to allow fresh start if corruption is suspected
+                // await Promise.all([clearData('darkMode'), clearData('cityCapacities'), clearData('fileUploadTimestamps')]);
+            }
+        });
+    </script>
+</body>
+</html>
